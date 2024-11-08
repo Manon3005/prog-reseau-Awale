@@ -1,6 +1,4 @@
-#include "board.h"
-
-#include "../headers/player.h"
+#include "../headers/game.h"
 
 int main(){
     Board* board = initBoard();
