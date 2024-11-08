@@ -1,6 +1,6 @@
-#include "../headers/game.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include "../headers/player.h"
 
 Player* initPlayer(char* username){
     Player* player = malloc(sizeof(Player));

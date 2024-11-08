@@ -4,8 +4,8 @@
 typedef struct Game
 {
     int id;
+    Player* player0;
     Player* player1;
-    Player* player2;
     Board* board;
     int score[2];
     int clockwise;
@@ -14,7 +14,7 @@ typedef struct Game
 
 Game* initGame(Player*, Player*);
 void displayGame(Game*);
-int chooseHouse(Game*, int houseNb);
+int chooseHouse(Game*, int houseNb); // retour = nombre de graines réparties
 void attributePoints(Game*, int startHouse, int houseNb);
 int updateBoard(Game*); //retour = nb de points à attribuer au joueur
 int isGameOver(Game*);
