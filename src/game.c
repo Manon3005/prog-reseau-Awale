@@ -29,12 +29,11 @@ int chooseHouse(Game* game, int houseNb){
     return houseNb+i;
 }; // retour = nombre de graines réparties
 
-void attributePoints(Game* game, int startHouse, int houseNb)
+void attributePoints(Game* game, int startHouse, int arrivalHouse)
 {
     Board* board = game->board;
     int pointNb = 0;
     if (game->clockwise) {
-        int arrivalHouse = (startHouse + houseNb) % 12;
         int seedCaptured = 1;
         if (startHouse < 6) {
             while(seedCaptured && arrivalHouse > 5) {
