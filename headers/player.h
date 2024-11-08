@@ -1,9 +1,11 @@
-struct Player
+typedef struct Player
 {
+    int id;
     char* username;
-    struct Game currentGame;
-    bool connectionState;
-};
+    int currentGameId;
+    int connectionState;
+} Player;
 
-Player initPlayer(char* username);
-bool setGame(Game);
+Player* initPlayer(char* username);
+int setGame(Player*, int GameId);
+void printPlayer(Player*);

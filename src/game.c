@@ -1,2 +1,2 @@
-import "./headers/player.h";
+#include "../headers/player.h"
 

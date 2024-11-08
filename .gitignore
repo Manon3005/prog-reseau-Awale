@@ -1,0 +1,16 @@
+# Ignorer les fichiers objets
+*.o
+
+# Ignorer les fichiers de sauvegarde générés par certains éditeurs
+*~
+*.swp
+
+# Ignorer les répertoires de compilation et d'exécutables
+/bin/
+/obj/
+
+# Ignorer l'exécutable
+awale
+
+# Ignorer les fichiers de logs
+*.log
