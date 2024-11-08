@@ -7,7 +7,7 @@ struct Game
     Player player2;
     Board board;
     int score[2];
-    bool clockwise;
+    int clockwise;
     int currentPlayer;
 } typedef Game;
 
@@ -17,7 +17,7 @@ void addPointScore(Game, int index, int points);
 void chooseHouse(Game, int houseNb);
 void attributePoints(Game);
 int updateBoard(Game); //retour = nb de points à attribuer au joueur
-bool isGameOver(Game);
+int isGameOver(Game);
 Player getWinner(Game);
 
 

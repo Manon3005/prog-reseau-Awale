@@ -1,8 +1,9 @@
-struct Board
+typedef struct Board
 {
     int houses[12];
-} typedef Board;
+} Board;
 
-void addSeed(Board board, int houseNb, int seedNb);
-void removeAllSeed(Board board, int houseNb);
-Board initBoard();
+int addSeed(Board* board, int houseNb, int seedNb);
+int removeAllSeed(Board* board, int houseNb);
+Board* initBoard();
+void displayBoard(Board*);

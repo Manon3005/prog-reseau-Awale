@@ -2,8 +2,8 @@ struct Player
 {
     char* username;
     struct Game currentGame;
-    bool connectionState;
-};
+    int connectionState;
+} typedef Player;
 
 Player initPlayer(char* username);
-bool setGame(Game);
+int setGame(Game);
