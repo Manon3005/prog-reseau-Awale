@@ -15,18 +15,17 @@ Game* initGame(Player* player0, Player* player1){
 int chooseHouse(Game* game, int houseNb){
 
     int seedNb = removeAllSeed(game->board, houseNb);
-    int offset = 1;
     //printf("seedNb = %d", seedNb);
     int i;
+    int offset = 0;
     for( i = 0; i < seedNb; i++){
-        i = i%11;
-        if(houseNb + i + offset == houseNb){
+        if( (houseNb + i + offset) % 12 == houseNb){
             ++offset;
         }
-        addSeed(game->board, houseNb + i + 1);
+        addSeed(game->board, (houseNb + i + offset) % 12);
         
     }
-    return houseNb+i;
+    return houseNb + offset;
 }; // retour = nombre de graines réparties
 
 void attributePoints(Game* game, int startHouse, int arrivalHouse)
