@@ -11,14 +11,20 @@ Board* initBoard()
     return board;
 }
 
-void displayBoard(Board* board)
+void displayBoard(Board* board, int currentPlayer)
 {
     for (int i = 0 ; i < 6 ; i++) {
         printf("[%d] ", board->houses[i]);
     }
+    if(currentPlayer == 0){
+        printf("  <- your side");
+    }
     printf("\n");
     for (int i = 11; i > 5 ; i--) {
         printf("[%d] ", board->houses[i]);
+    }
+    if(currentPlayer == 1){
+        printf("  <- your side");
     }
     printf("\n");
 }
