@@ -23,11 +23,11 @@ void displayBoard(Board* board)
     printf("\n");
 }
 
-int addSeed(Board* board, int houseNb, int seedNb)
+int addSeed(Board* board, int houseNb)
 {
-    if (houseNb >= 0 && houseNb < 12 && seedNb >= 0) 
+    if (houseNb >= 0 && houseNb < 12) 
     {
-        board->houses[houseNb] += seedNb;
+        board->houses[houseNb]++;
         return 0;
     }
     return 1;
