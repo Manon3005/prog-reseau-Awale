@@ -66,8 +66,8 @@ void attributePoints(Game* game, int startHouse, int houseNb)
 
 void displayGame(Game* game) 
 {
+    printPlayer(game->player0);
     printPlayer(game->player1);
-    printPlayer(game->player2);
     displayBoard(game->board);
     printf("Score player1 : %d\n", game->score[0]);
     printf("Score player2 : %d\n", game->score[1]);
