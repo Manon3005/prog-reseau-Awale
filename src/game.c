@@ -20,13 +20,8 @@ int chooseHouse(Game* game, int houseNb){
         i = i%11;
         addSeed(game->board, i+1);
     }
-
     return houseNb;
 }; // retour = nombre de graines réparties
-#include "../headers/game.h"
-#include <stdlib.h>
-#include <stdio.h>
-
 
 void attributePoints(Game* game, int startHouse, int houseNb)
 {
