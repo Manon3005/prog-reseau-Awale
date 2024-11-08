@@ -14,9 +14,8 @@ typedef struct Game
 
 Game* initGame(Player*, Player*);
 void displayGame(Game*);
-void addPointScore(Game*, int index, int points);
 int chooseHouse(Game*, int houseNb); // retour = nombre de graines réparties
-void attributePoints(Game*);
+void attributePoints(Game*, int startHouse, int houseNb);
 int updateBoard(Game*); //retour = nb de points à attribuer au joueur
 int isGameOver(Game*);
 Player getWinner(Game*);
