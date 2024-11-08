@@ -13,7 +13,7 @@ typedef struct Game
 } Game;
 
 Game* initGame(Player*, Player*);
-void displayBoard(Game*);
+void displayGame(Game*);
 void addPointScore(Game*, int index, int points);
 void chooseHouse(Game*, int houseNb);
 void attributePoints(Game*);
