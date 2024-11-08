@@ -37,8 +37,9 @@ int removeAllSeed(Board* board, int houseNb)
 {
     if (houseNb >= 0 && houseNb < 12) 
     {
+        int res = board->houses[houseNb];
         board->houses[houseNb] = 0;
-        return 0;
+        return res;
     }
-    return 1;
+    return -1;
 }
