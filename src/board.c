@@ -43,3 +43,10 @@ int removeAllSeed(Board* board, int houseNb)
     }
     return -1;
 }
+
+void setBoardTest(Board* board, int* tab)
+{
+    for(int i = 0 ; i < 12 ; i++){
+        board->houses[i] = tab[i];
+    }
+}

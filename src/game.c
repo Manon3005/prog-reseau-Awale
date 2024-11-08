@@ -16,7 +16,7 @@ int chooseHouse(Game* game, int houseNb){
 
     int seedNb = removeAllSeed(game->board, houseNb);
     int offset = 1;
-    printf("seedNb = %d", seedNb);
+    //printf("seedNb = %d", seedNb);
     int i;
     for( i = 0; i < seedNb; i++){
         i = i%11;
@@ -44,8 +44,8 @@ void attributePoints(Game* game, int startHouse, int arrivalHouse)
                 } else {
                     seedCaptured = 0;
                 }
-                game->score[0] += pointNb;
             }
+            game->score[0] += pointNb;
         } else {
             while(seedCaptured && arrivalHouse < 6) {
                 if (board->houses[arrivalHouse] ==  2 || board->houses[arrivalHouse] ==  3) {
@@ -55,8 +55,8 @@ void attributePoints(Game* game, int startHouse, int arrivalHouse)
                 } else {
                     seedCaptured = 0;
                 }
-                game->score[1] += pointNb;
             }
+            game->score[1] += pointNb;
         }
     } else {
         //coder en sens inverse
