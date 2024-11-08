@@ -13,6 +13,7 @@ int main(){
     setBoardTest(game->board, tab);
     displayGame(game);
     int arrivalHouse = chooseHouse(game, 5);
+    printf("Arrival House : %d\n", arrivalHouse);
     displayGame(game);
     //attributePoints(game, 5, arrivalHouse);
     //displayGame(game);

@@ -25,8 +25,12 @@ int chooseHouse(Game* game, int houseNb){
         addSeed(game->board, (houseNb + i + offset) % 12);
         
     }
-    return houseNb + offset;
+    return (houseNb + i + offset) % 12;
 }; // retour = nombre de graines réparties
+
+int simulateChoose(Game* game, int houseNb){
+
+}
 
 void attributePoints(Game* game, int startHouse, int arrivalHouse)
 {
