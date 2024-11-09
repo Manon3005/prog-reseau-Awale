@@ -9,6 +9,7 @@ Game* initGame(Player* player0, Player* player1){
     game->clockwise = 1;
     game->currentPlayer = 0;
     game->board = initBoard();
+    game->winner = NULL;
     return game;
 }
 
@@ -65,9 +66,49 @@ void attributePoints(Game* game, int startHouse, int arrivalHouse)
 
 void displayGame(Game* game) 
 {
-    printPlayer(game->player0);
-    printPlayer(game->player1);
-    displayBoard(game->board);
     printf("Score player1 : %d\n", game->score[0]);
     printf("Score player2 : %d\n", game->score[1]);
+    displayBoard(game->board);
+}
+
+int isGameOver(Game* game) //à appeler avant le tour
+{
+    if (game->score[(game->currentPlayer + 1) % 2] >= 25) {
+        game->winner = (game->currentPlayer + 1) % 2;
+        return 1;
+    }
+    if () {
+
+    }
+    if (false) {
+        //remplacer par un moyen de détecter que plus aucune capture n'est possible avec les graines restantes
+        return 1;
+    }
+    return 0;
+
+    int playOneTurn(Game* game)
+    {
+        displayGame(game);
+        int playerChoice;
+        int isGood = 0;
+        printf("Which house do you choose ?\n")
+        while (!isGood) {
+            scanf("%d", &playerChoice);
+            if (playerChoice > 0 && playerChoice < 7) {
+                isGood = 1;
+            } else {
+                printf("Incorrect choice. Please choose a number between 1 and 6.\n")
+            }
+        }
+        int arrivalHouse;
+        if (game->currentPlayer == 0) {
+            arrivalHouse = chooseHouse(game, playerChoice);
+            attributePoints(game, playerChoice, arrivalHouse);
+        } else {
+            arrivalHouse = chooseHouse(game, 12 - playerChoice);
+            attributePoints(game, 12 - playerChoice, arrivalHouse);
+        }
+        game->currentPlayer = (game->currentPlayer + 1) % 2;
+        return isGameOver(game);
+    }
 }

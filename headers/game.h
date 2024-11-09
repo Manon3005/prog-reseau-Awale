@@ -10,15 +10,14 @@ typedef struct Game
     int score[2];
     int clockwise;
     int currentPlayer;
+    int winner;
 } Game;
 
 Game* initGame(Player*, Player*);
 void displayGame(Game*);
 int chooseHouse(Game*, int houseNb); // retour = nombre de graines réparties
 void attributePoints(Game* game, int startHouse, int arrivalHouse);
-int updateBoard(Game*); //retour = nb de points à attribuer au joueur
+int playOneTurn(Game*); //retour = nb de points à attribuer au joueur
 int isGameOver(Game*);
-Player getWinner(Game*);
-
 
 
