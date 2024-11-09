@@ -16,19 +16,22 @@ Game* initGame(Player* player0, Player* player1){
 int chooseHouse(Game* game, int houseNb){
 
     int seedNb = removeAllSeed(game->board, houseNb);
-    int offset = 1;
     //printf("seedNb = %d", seedNb);
     int i;
+    int offset = 0;
     for( i = 0; i < seedNb; i++){
-        i = i%11;
-        if(houseNb + i + offset == houseNb){
+        if( (houseNb + i + offset) % 12 == houseNb){
             ++offset;
         }
-        addSeed(game->board, houseNb + i + 1);
+        addSeed(game->board, (houseNb + i + offset) % 12);
         
     }
-    return houseNb+i;
+    return (houseNb + i + offset) % 12;
 }; // retour = nombre de graines réparties
+
+int simulateChoose(Game* game, int houseNb){
+
+}
 
 void attributePoints(Game* game, int startHouse, int arrivalHouse)
 {
@@ -66,49 +69,12 @@ void attributePoints(Game* game, int startHouse, int arrivalHouse)
 
 void displayGame(Game* game) 
 {
+    printf("\n");
+    printf("--------------------------------------\n");
+    displayBoard(game->board, game->currentPlayer);
+    printf("\n");
     printf("Score player1 : %d\n", game->score[0]);
     printf("Score player2 : %d\n", game->score[1]);
-    displayBoard(game->board);
-}
-
-int isGameOver(Game* game) //à appeler avant le tour
-{
-    if (game->score[(game->currentPlayer + 1) % 2] >= 25) {
-        game->winner = (game->currentPlayer + 1) % 2;
-        return 1;
-    }
-    if () {
-
-    }
-    if (false) {
-        //remplacer par un moyen de détecter que plus aucune capture n'est possible avec les graines restantes
-        return 1;
-    }
-    return 0;
-
-    int playOneTurn(Game* game)
-    {
-        displayGame(game);
-        int playerChoice;
-        int isGood = 0;
-        printf("Which house do you choose ?\n")
-        while (!isGood) {
-            scanf("%d", &playerChoice);
-            if (playerChoice > 0 && playerChoice < 7) {
-                isGood = 1;
-            } else {
-                printf("Incorrect choice. Please choose a number between 1 and 6.\n")
-            }
-        }
-        int arrivalHouse;
-        if (game->currentPlayer == 0) {
-            arrivalHouse = chooseHouse(game, playerChoice);
-            attributePoints(game, playerChoice, arrivalHouse);
-        } else {
-            arrivalHouse = chooseHouse(game, 12 - playerChoice);
-            attributePoints(game, 12 - playerChoice, arrivalHouse);
-        }
-        game->currentPlayer = (game->currentPlayer + 1) % 2;
-        return isGameOver(game);
-    }
+    printf("--------------------------------------\n");
+    printf("\n");
 }
