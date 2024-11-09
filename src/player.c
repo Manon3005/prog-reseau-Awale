@@ -2,16 +2,19 @@
 #include <stdio.h>
 #include "../headers/player.h"
 
-Player* initPlayer(char* username){
+Player* initPlayer(char* username, int id){
     Player* player = malloc(sizeof(Player));
     player->username = username;
+    player->currentGameId = -1;
+    player->id = id;
+    player->connectionState = 0;
     return player;
 }
 
 
 int setGame(Player* player, int gameId){
-    if (player->currentGameId == 0){
-        player->currentGameId  = gameId;
+    if (player->currentGameId == -1){
+        player->currentGameId = gameId;
         return 1;
     }
     return 0;

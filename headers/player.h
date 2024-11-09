@@ -6,6 +6,6 @@ typedef struct Player
     int connectionState;
 } Player;
 
-Player* initPlayer(char* username);
+Player* initPlayer(char* username, int id);
 int setGame(Player*, int GameId);
 void printPlayer(Player*);

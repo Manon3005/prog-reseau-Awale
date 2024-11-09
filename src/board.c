@@ -56,3 +56,11 @@ void setBoardTest(Board* board, int* tab)
         board->houses[i] = tab[i];
     }
 }
+
+int getSeedNb(Board* board, int playerNb) {
+    int result = 0;
+    for (int i = playerNb*6 ; i < (playerNb + 1)*6 ; i++) {
+        result += board->houses[i];
+    }
+    return result;
+}
