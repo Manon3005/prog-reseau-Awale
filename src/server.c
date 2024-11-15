@@ -3,8 +3,9 @@
 #include <errno.h>
 #include <string.h>
 
-#include "../../headers/server/server.h"
-#include "../../headers/server/player.h"
+#include "../headers/server.h"
+#include "../headers/client.h"
+#include "../headers/game.h"
 
 static void init(void)
 {
@@ -34,7 +35,7 @@ static void app(void)
    int actual = 0;
    int max = sock;
    /* an array for all clients */
-   Player players[MAX_CLIENTS];
+   Client clients[MAX_CLIENTS];
 
    fd_set rdfs; //ensemble de descripteurs de fichiers
 
@@ -52,7 +53,7 @@ static void app(void)
       /* add socket of each client */
       for(i = 0; i < actual; i++)
       {
-         FD_SET(players[i].sock, &rdfs); //chaque socket client ajoutée à l'ensemble
+         FD_SET(clients[i].sock, &rdfs); //chaque socket client ajoutée à l'ensemble
       }
 
       if(select(max + 1, &rdfs, NULL, NULL, NULL) == -1)
@@ -92,10 +93,10 @@ static void app(void)
 
          FD_SET(csock, &rdfs);
 
-         Player c = { csock };
+         Client c = { csock };
          strncpy(c.name, buffer, BUF_SIZE - 1);
          printf("name : %s", c.name);
-         players[actual] = c;
+         clients[actual] = c;
          actual++;
       }
       else
@@ -104,23 +105,23 @@ static void app(void)
          for(i = 0; i < actual; i++)
          {
             /* a client is talking */
-            if(FD_ISSET(players[i].sock, &rdfs))
+            if(FD_ISSET(clients[i].sock, &rdfs))
             {
-               Player player = players[i];
-               int c = read_client(players[i].sock, buffer);
-               printf("%s\n", c);
+               Client client = clients[i];
+               int c = read_client(clients[i].sock, buffer);
+               printf("%d\n", c);
                /* client disconnected */
                if(c == 0)
                {
-                  closesocket(players[i].sock);
-                  remove_client(players, i, &actual);
-                  strncpy(buffer, player.username, BUF_SIZE - 1);
+                  closesocket(clients[i].sock);
+                  remove_client(clients, i, &actual);
+                  strncpy(buffer, client.name, BUF_SIZE - 1);
                   strncat(buffer, " disconnected !", BUF_SIZE - strlen(buffer) - 1);
-                  send_message_to_all_clients(players, player, actual, buffer, 1);
+                  send_message_to_all_clients(clients, client, actual, buffer, 1);
                }
                else
                {
-                  send_message_to_all_clients(players, player, actual, buffer, 0);
+                  send_message_to_all_clients(clients, client, actual, buffer, 0);
                }
                break;
             }
@@ -128,28 +129,28 @@ static void app(void)
       }
    }
 
-   clear_clients(players, actual);
+   clear_clients(clients, actual);
    end_connection(sock);
 }
 
-static void clear_clients(Player *players, int actual)
+static void clear_clients(Client *clients, int actual)
 {
    int i = 0;
    for(i = 0; i < actual; i++)
    {
-      closesocket(players[i].sock);
+      closesocket(clients[i].sock);
    }
 }
 
-static void remove_client(Player *players, int to_remove, int *actual)
+static void remove_client(Client *clients, int to_remove, int *actual)
 {
    /* we remove the client in the array */
-   memmove(players + to_remove, players + to_remove + 1, (*actual - to_remove - 1) * sizeof(Player));
+   memmove(clients + to_remove, clients + to_remove + 1, (*actual - to_remove - 1) * sizeof(Client));
    /* number client - 1 */
    (*actual)--;
 }
 
-static void send_message_to_all_clients(Player *players, Player sender, int actual, const char *buffer, char from_server)
+static void send_message_to_all_clients(Client *clients, Client sender, int actual, const char *buffer, char from_server)
 {
    int i = 0;
    char message[BUF_SIZE];
@@ -157,7 +158,7 @@ static void send_message_to_all_clients(Player *players, Player sender, int actu
    for(i = 0; i < actual; i++)
    {
       /* we don't send message to the sender */
-      if(sender.sock != players[i].sock)
+      if(sender.sock != clients[i].sock)
       {
          if(from_server == 0)
          {
@@ -165,7 +166,7 @@ static void send_message_to_all_clients(Player *players, Player sender, int actu
             strncat(message, " : ", sizeof message - strlen(message) - 1);
          }
          strncat(message, buffer, sizeof message - strlen(message) - 1);
-         write_client(players[i].sock, message);
+         write_client(clients[i].sock, message);
       }
    }
 }

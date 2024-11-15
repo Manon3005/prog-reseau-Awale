@@ -1,5 +1,5 @@
-#ifndef CLIENT_H
-#define CLIENT_H
+#ifndef SERVER_H
+#define SERVER_H
 
 #ifdef WIN32
 
@@ -27,17 +27,23 @@ typedef struct in_addr IN_ADDR;
 
 #endif
 
-#define CRLF     "\r\n"
-#define PORT     1977
+#define CRLF        "\r\n"
+#define PORT         1977
+#define MAX_CLIENTS     100
 
-#define BUF_SIZE 1024
+#define BUF_SIZE    1024
+
+#include "client.h"
 
 static void init(void);
 static void end(void);
-static void app(const char *address, const char *name);
-static int init_connection(const char *address);
+static void app(void);
+static int init_connection(void);
 static void end_connection(int sock);
-static int read_server(SOCKET sock, char *buffer);
-static void write_server(SOCKET sock, const char *buffer);
+static int read_client(SOCKET sock, char *buffer);
+static void write_client(SOCKET sock, const char *buffer);
+static void send_message_to_all_clients(Client *clients, Client client, int actual, const char *buffer, char from_server);
+static void remove_client(Client *clients, int to_remove, int *actual);
+static void clear_clients(Client *clients, int actual);
 
 #endif /* guard */

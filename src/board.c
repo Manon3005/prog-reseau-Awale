@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../../headers/server/board.h"
+#include "../headers/board.h"
 
 Board* initBoard()
 {
