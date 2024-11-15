@@ -45,6 +45,8 @@ static void app(void)
 
    fd_set rdfs; //ensemble de descripteurs de fichiers
 
+   csvManager* csvManager;
+
    while(1)
    {
       int i = 0;
@@ -109,7 +111,7 @@ static void app(void)
 
          printf("Username : %s\n", buffer);
 
-         if (isCLientInCsv(NULL, buffer)) {
+         if (isCLientInCsv(&csvManager, buffer)) {
             write_client(c.sock, "Please, enter your password:");
             c.state = IN_CONNEXION;
          } else {
@@ -147,11 +149,12 @@ static void app(void)
                   if (client->state == IN_REGISTER) {
                      printf("Password: %s\n", buffer);
                      client->state = IN_MENU;
+                     addClientCsv(&csvManager, client->name, buffer);
                      write_client(client->sock, "Your account has been created, you are now connected!\n");
                      write_client(client->sock, "You can enter \"menu\" to display the menu.");
                      print_menu(client);
                   } else if (client->state == IN_CONNEXION) {
-                     if (authenticateClient(NULL, client->name, buffer)) {
+                     if (authenticateClient(&csvManager, client->name, buffer)) {
                         client->state = IN_MENU;
                         addClientCsv(NULL, client->name, buffer);
                         write_client(client->sock, "You are now connected!\n");
@@ -387,28 +390,11 @@ static void write_client(SOCKET sock, const char *buffer)
 
 int main(int argc, char **argv)
 {
-   char* username1 = "adri";
-   char* pwd1 = "1";
-   char* pwd2 = "2";
-   char* username2 = "toto";
-
-   char* username3 = "aman";
-
-   csvManager* csvManager;
-   printf("%d \n",isCLientInCsv(csvManager, username1));
-   printf("%d \n",isCLientInCsv(csvManager, username2));
-
-   printf("authenticate client : %d \n",authenticateClient(csvManager, username1, pwd1));
-   printf("authenticate client : %d \n",authenticateClient(csvManager, username1, pwd2));
-
-   printf("addClientCsv : %d \n", addClientCsv(csvManager, username3, pwd2 ));
-
-   /*
    init();
 
    app();
 
-   end();*/
+   end();
 
    return EXIT_SUCCESS;
 }
