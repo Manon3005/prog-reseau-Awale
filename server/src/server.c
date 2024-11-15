@@ -6,6 +6,7 @@
 #include "../headers/server.h"
 #include "../headers/client.h"
 #include "../headers/game.h"
+#include "../headers/csvManager.h"
 
 static void init(void)
 {
