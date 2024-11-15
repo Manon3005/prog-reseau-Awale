@@ -1,10 +1,11 @@
+#ifndef GAME_H
+#define GAME_H
+
 #include "board.h"
-#include "player.h"
 
 typedef struct Game
 {
-    int id;
-    Player* player[2];
+    char player[2][1024];
     Board* board;
     int score[2];
     int clockwise;
@@ -12,7 +13,6 @@ typedef struct Game
     int winner;
 } Game;
 
-Game* initGame(Player*, Player*, int);
 void displayGame(Game*);
 int chooseHouse(Game*, int houseNb); // retour = camp d'arrivée
 void attributePoints(Game* game, int startHouse, int arrivalHouse);
@@ -21,4 +21,4 @@ int isGameOver(Game*);
 int isThereFamine(Game*);
 void simulateChoose(Game*, int houseNb, int* result);
 
-
+#endif

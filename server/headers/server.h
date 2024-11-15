@@ -34,6 +34,7 @@ typedef struct in_addr IN_ADDR;
 #define BUF_SIZE    1024
 
 #include "client.h"
+#include "request.h"
 
 static void init(void);
 static void end(void);
@@ -42,8 +43,15 @@ static int init_connection(void);
 static void end_connection(int sock);
 static int read_client(SOCKET sock, char *buffer);
 static void write_client(SOCKET sock, const char *buffer);
-static void send_message_to_all_clients(Client *clients, Client client, int actual, const char *buffer, char from_server);
-static void remove_client(Client *clients, int to_remove, int *actual);
-static void clear_clients(Client *clients, int actual);
+static void send_message_to_all_clients(Client* clients, Client client, int actual, const char *buffer, char from_server);
+static void remove_client(Client* clients, int to_remove, int *actual);
+static void clear_clients(Client* clients, int actual);
+static void print_online_players(Client* clients, Client* client, int actual);
+static void print_menu(Client* client);
+static Client* is_client_connected(Client *clients, int actual, char* username);
+static void send_request(Client* sender, Client* receiver);
+static Client* get_sender_from_receiver(Request* requests, int actual, Client* receiver);
+static int get_request_index(Request *requests, int actual, Client* sender);
+static void remove_request(Request *requests, int to_remove, int *actual);
 
 #endif /* guard */

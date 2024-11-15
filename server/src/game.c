@@ -3,29 +3,14 @@
 
 #include "../headers/game.h"
 
-Game* initGame(Player* player0, Player* player1, int id)
+int initGame(Game* game, char* player_0, char* player_1)
 {
-    if (id < 0) {
-        printf("Game Id should be > 0.\n");
-        return NULL;
-    }
-    if (!setGame(player0, id)){
-        printf("%s is already playing.\n", player0->username);
-        return NULL;
-    }
-    if (!setGame(player1, id)){
-        player0->currentGameId = -1;
-        printf("%s is already playing.\n", player1->username);
-        return NULL;
-    }
-    Game* game = malloc(sizeof(Game));
-    game->player[0] = player0;
-    game->player[1] = player1;
     game->clockwise = 1;
-    game->currentPlayer = 0;
+    game->currentPlayer = rand() % 2;
     game->board = initBoard();
-    game->id = id;
-    return game;
+    strcpy(game->player[0], player_0);
+    strcpy(game->player[1], player_1);
+    return game->currentPlayer;
 }
 
 int chooseHouse(Game* game, int houseNb)
@@ -99,8 +84,8 @@ void displayGame(Game* game)
     printf("--------------------------------------\n");
     displayBoard(game->board, game->currentPlayer);
     printf("\n");
-    printf("Score %s : %d\n", game->player[0]->username, game->score[0]);
-    printf("Score %s : %d\n", game->player[1]->username, game->score[1]);
+    printf("Score %s : %d\n", game->player[0], game->score[0]);
+    printf("Score %s : %d\n", game->player[1], game->score[1]);
     printf("--------------------------------------\n");
     printf("\n");
 }
@@ -124,11 +109,11 @@ int isGameOver(Game* game) //à appeler avant le tour
         return 1;
     } else if (game->score[0] > 25) {
         game->winner = 0;
-        printf("Congratulations to %s who wins the game with %d points\n", game->player[0]->username, game->score[0]);
+        printf("Congratulations to %s who wins the game with %d points\n", game->player[0], game->score[0]);
         return 1;
     } else if (game->score[1] > 25) {
         game->winner = 1;
-        printf("Congratulations to %s who wins the game with %d points\n", game->player[1]->username, game->score[1]);
+        printf("Congratulations to %s who wins the game with %d points\n", game->player[1], game->score[1]);
         return 1;
     } else {
         return 0; 
@@ -159,7 +144,7 @@ int playOneTurn(Game* game)
     int result[] = {0, 0};
     int otherPlayer = (game->currentPlayer + 1) % 2;
     int houseNb;
-    printf("%s, which house do you choose ?\n", game->player[game->currentPlayer]->username);
+    printf("%s, which house do you choose ?\n", game->player[game->currentPlayer]);
     while (!isGood) {
         scanf("%d", &playerChoice);
         if (playerChoice > 0 && playerChoice < 7) {

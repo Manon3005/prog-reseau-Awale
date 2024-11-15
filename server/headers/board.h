@@ -1,3 +1,6 @@
+#ifndef BOARD_H
+#define BOARD_H
+
 typedef struct Board
 {
     int houses[12];
@@ -9,3 +12,5 @@ Board* initBoard();
 void displayBoard(Board*, int currentPlayer);
 void setBoardTest(Board*, int*);
 int getSeedNb(Board* board, int playerNb);
+
+#endif

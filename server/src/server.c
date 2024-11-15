@@ -4,7 +4,6 @@
 #include <string.h>
 
 #include "../headers/server.h"
-#include "../headers/client.h"
 #include "../headers/game.h"
 #include "../headers/csvManager.h"
 
@@ -38,6 +37,12 @@ static void app(void)
    /* an array for all clients */
    Client clients[MAX_CLIENTS];
 
+   Request requests[MAX_CLIENTS];
+   int actualRequest = 0;
+
+   Game games[MAX_CLIENTS];
+   int actualGame = 0;
+
    fd_set rdfs; //ensemble de descripteurs de fichiers
 
    while(1)
@@ -66,7 +71,12 @@ static void app(void)
       /* something from standard input : i.e keyboard */
       if(FD_ISSET(STDIN_FILENO, &rdfs)) //vrai si le descripteur de fichier est bien dans l'ensemble
       {
-         /* stop process when type on keyboard */
+         read(STDIN_FILENO, buffer, BUF_SIZE);
+         if (strcmp(buffer, "end") == 0) {
+            clear_clients(clients, actual);
+            end_connection(sock);
+            return;
+         }
          break;
       }
       else if(FD_ISSET(sock, &rdfs))
@@ -83,7 +93,7 @@ static void app(void)
          }
 
          /* after connecting the client sends its name */
-         if(read_client(csock, buffer) == -1)
+         if (read_client(csock, buffer) == -1)
          {
             /* disconnected */
             continue;
@@ -96,7 +106,17 @@ static void app(void)
 
          Client c = { csock };
          strncpy(c.name, buffer, BUF_SIZE - 1);
-         printf("name : %s\n", c.name);
+
+         printf("Username : %s\n", buffer);
+
+         if (isCLientInCsv(NULL, buffer)) {
+            write_client(c.sock, "Please, enter your password:");
+            c.state = IN_CONNEXION;
+         } else {
+            write_client(csock, "Welcome to our game !\n");
+            write_client(csock, "Please create a password:");
+            c.state = IN_REGISTER;
+         }
          clients[actual] = c;
          actual++;
       }
@@ -108,7 +128,7 @@ static void app(void)
             /* a client is talking */
             if(FD_ISSET(clients[i].sock, &rdfs))
             {
-               Client client = clients[i];
+               Client* client = (&clients[i]);
                int c = read_client(clients[i].sock, buffer);
                printf("read_client : %d\n", c);
                /* client disconnected */
@@ -116,22 +136,136 @@ static void app(void)
                {
                   closesocket(clients[i].sock);
                   remove_client(clients, i, &actual);
-                  strncpy(buffer, client.name, BUF_SIZE - 1);
+                  strncpy(buffer, client->name, BUF_SIZE - 1);
                   strncat(buffer, " disconnected !", BUF_SIZE - strlen(buffer) - 1);
-                  send_message_to_all_clients(clients, client, actual, buffer, 1);
+                  send_message_to_all_clients(clients, (*client), actual, buffer, 1);
                }
                else
                {
-                  send_message_to_all_clients(clients, client, actual, buffer, 0);
+                  printf("Buffer : %s\n", buffer);
+                  printf("Client state : %d\n", client->state);
+                  if (client->state == IN_REGISTER) {
+                     printf("Password: %s\n", buffer);
+                     client->state = IN_MENU;
+                     write_client(client->sock, "Your account has been created, you are now connected!\n");
+                     write_client(client->sock, "You can enter \"menu\" to display the menu.");
+                     print_menu(client);
+                  } else if (client->state == IN_CONNEXION) {
+                     if (authenticateClient(NULL, client->name, buffer)) {
+                        client->state = IN_MENU;
+                        addClientCsv(NULL, client->name, buffer);
+                        write_client(client->sock, "You are now connected!\n");
+                        write_client(client->sock, "You can enter \"menu\" to display the menu.");
+                        print_menu(client);
+                     } else {
+                        write_client(client->sock, "Wrong password, enter your password again:");
+                     }
+                  } else if (client->state == IN_MENU) {
+                     if (strcmp("menu", buffer) == 0){
+                        print_menu(client);
+                     } else if (strcmp("1", buffer) == 0){
+                        print_online_players(clients, client, actual);
+                     } else if (strcmp("2", buffer) == 0){
+                        client->state = IN_CHALLENGE_FROM;
+                        write_client(client->sock, "Enter the name of the player you want to challenge:");
+                     }
+                  } else if (client->state == IN_CHALLENGE_FROM) {
+                     if (strcmp(buffer, client->name) != 0) {
+                        Client* requested_client = is_client_connected(clients, actual, buffer);
+                        if (requested_client) {
+                           if (requested_client->state == IN_MENU) {
+                              write_client(client->sock, "Request sent to the other player.\n");
+                              send_request(client, requested_client);
+                              Request request = {client, requested_client};
+                              requests[actualRequest] = request;
+                              actualRequest++;
+                           } else if (requested_client->state == IN_GAME) {
+                              write_client(client->sock, "This player is already playing a game. Try later.\n");
+                              client->state = IN_MENU;
+                              print_menu(client);
+                           } else {
+                              write_client(client->sock, "This player is already involved in a game request. Try later.\n");
+                              client->state = IN_MENU;
+                              print_menu(client);
+                           } 
+                        } else {
+                           write_client(client->sock, "This player isn't connected.\n");
+                           client->state = IN_MENU;
+                           print_menu(client);
+                        }
+                     } else {
+                        write_client(client->sock, "You can't challenge yourself.\n");
+                     }
+                  } else if (client->state == IN_CHALLENGE_TO) {
+                     Client* client_sender = get_sender_from_receiver(requests, actualRequest, client);
+                     if (strcmp("Y", buffer) == 0) {
+                        write_client(client->sock, "Starting of the game.\n");
+                        write_client(client_sender->sock, "Request accepted. Starting of the game.\n");
+                        client->state = IN_GAME;
+                        client_sender->state = IN_GAME;
+                        int request_to_remove = get_request_index(requests, actualRequest, client_sender);
+                        remove_request(requests, request_to_remove, (&actualRequest));
+                        //create game
+                     } else if (strcmp("N", buffer) == 0) {
+                        client->state = IN_MENU;
+                        client_sender->state = IN_MENU;
+                        write_client(client->sock, "Request refused.\n");
+                        write_client(client_sender->sock, "Request refused.\n");
+                        print_menu(client);
+                        print_menu(client_sender);
+                        int request_to_remove = get_request_index(requests, actualRequest, client_sender);
+                        remove_request(requests, request_to_remove, (&actualRequest));
+                     } else {
+                        write_client(client->sock, "Wrong answer. Enter \"Y\" or \"N\" please.\n");
+                     }
+                  }
                }
                break;
             }
          }
       }
    }
+}
 
-   clear_clients(clients, actual);
-   end_connection(sock);
+static Client* get_sender_from_receiver(Request* requests, int actual, Client* receiver) {
+   for (int i = 0 ; i < actual ; i++) {
+      if (requests[i].receiver ==  receiver) {
+         return (requests[i].sender);
+      }
+   }
+   return NULL;
+}
+
+
+static void send_request(Client* sender, Client* receiver) {
+   write_client(receiver->sock, sender-> name);
+   write_client(receiver->sock, " wants to play with you ? Do you accept (Y) or deny (N) ?\n");
+   receiver->state = IN_CHALLENGE_TO;
+}
+
+static Client* is_client_connected(Client *clients, int actual, char* username) {
+   for (int i = 0 ; i < actual ; i++) {
+      if (strcmp(clients[i].name, username) == 0) {
+         return (&clients[i]);
+      }
+   }
+   return NULL;
+}
+
+static void print_online_players(Client *clients, Client *client, int actual) {
+   write_client(client->sock, "Online players:\n");
+   for (int i = 0 ; i < actual ; i++) {
+      write_client(client->sock, "- ");
+      write_client(client->sock, clients[i].name);
+      write_client(client->sock, "\n");
+   }
+}
+
+static void print_menu(Client *client) {
+   write_client(client->sock, "Please select an option.\n");
+   write_client(client->sock, "[1] Online players list\n");
+   write_client(client->sock, "[2] Challenge a player\n");
+   write_client(client->sock, "Option selected:");
 }
 
 static void clear_clients(Client *clients, int actual)
@@ -148,6 +282,24 @@ static void remove_client(Client *clients, int to_remove, int *actual)
    /* we remove the client in the array */
    memmove(clients + to_remove, clients + to_remove + 1, (*actual - to_remove - 1) * sizeof(Client));
    /* number client - 1 */
+   (*actual)--;
+}
+
+static int get_request_index(Request *requests, int actual, Client* sender) {
+   for(int i = 0; i < actual; i++)
+   {
+      if (requests[i].sender == sender) {
+         return i;
+      }
+   }
+   return -1;
+}
+
+static void remove_request(Request *requests, int to_remove, int *actual)
+{
+   /* we remove the request in the array */
+   memmove(requests + to_remove, requests + to_remove + 1, (*actual - to_remove - 1) * sizeof(Request));
+   /* number request - 1 */
    (*actual)--;
 }
 
