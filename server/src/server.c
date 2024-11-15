@@ -235,11 +235,28 @@ static void write_client(SOCKET sock, const char *buffer)
 
 int main(int argc, char **argv)
 {
+   char* username1 = "adri";
+   char* pwd1 = "1";
+   char* pwd2 = "2";
+   char* username2 = "toto";
+
+   char* username3 = "aman";
+
+   csvManager* csvManager;
+   printf("%d \n",isCLientInCsv(csvManager, username1));
+   printf("%d \n",isCLientInCsv(csvManager, username2));
+
+   printf("authenticate client : %d \n",authenticateClient(csvManager, username1, pwd1));
+   printf("authenticate client : %d \n",authenticateClient(csvManager, username1, pwd2));
+
+   printf("addClientCsv : %d \n", addClientCsv(csvManager, username3, pwd2 ));
+
+   /*
    init();
 
    app();
 
-   end();
+   end();*/
 
    return EXIT_SUCCESS;
 }
