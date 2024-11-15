@@ -1,5 +1,5 @@
 # Nom de l'exécutable final
-EXEC = bin/awale
+EXEC = bin/client
 
 # Répertoires
 SRC_DIR = src
