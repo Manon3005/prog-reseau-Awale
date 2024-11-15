@@ -54,7 +54,6 @@ static void app(const char *address, const char *name)
       /* something from standard input : i.e keyboard */
       if(FD_ISSET(STDIN_FILENO, &rdfs))
       {
-         printf("clavier");
          fgets(buffer, BUF_SIZE - 1, stdin);
          {
             char *p = NULL;

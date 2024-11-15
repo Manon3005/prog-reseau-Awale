@@ -63,14 +63,14 @@ static void app(void)
       }
 
       /* something from standard input : i.e keyboard */
-      if(FD_ISSET(STDIN_FILENO, &rdfs)) //vrai si le descripteur de fichier est bien dans l'ensemble ?
+      if(FD_ISSET(STDIN_FILENO, &rdfs)) //vrai si le descripteur de fichier est bien dans l'ensemble
       {
          /* stop process when type on keyboard */
          break;
       }
       else if(FD_ISSET(sock, &rdfs))
       {
-         printf("new\n");
+         printf("new client\n");
          /* new client */
          SOCKADDR_IN csin = { 0 };
          size_t sinsize = sizeof csin;
@@ -95,7 +95,7 @@ static void app(void)
 
          Client c = { csock };
          strncpy(c.name, buffer, BUF_SIZE - 1);
-         printf("name : %s", c.name);
+         printf("name : %s\n", c.name);
          clients[actual] = c;
          actual++;
       }
@@ -109,7 +109,7 @@ static void app(void)
             {
                Client client = clients[i];
                int c = read_client(clients[i].sock, buffer);
-               printf("%d\n", c);
+               printf("read_client : %d\n", c);
                /* client disconnected */
                if(c == 0)
                {
@@ -160,7 +160,7 @@ static void send_message_to_all_clients(Client *clients, Client sender, int actu
       /* we don't send message to the sender */
       if(sender.sock != clients[i].sock)
       {
-         if(from_server == 0)
+         if (from_server == 0)
          {
             strncpy(message, sender.name, BUF_SIZE - 1);
             strncat(message, " : ", sizeof message - strlen(message) - 1);
