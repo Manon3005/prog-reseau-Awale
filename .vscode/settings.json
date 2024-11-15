@@ -1,6 +1,9 @@
 {
     "C_Cpp.errorSquiggles": "disabled",
     "files.associations": {
-        "game.h": "c"
+        "game.h": "c",
+        "board.h": "c",
+        "player.h": "c",
+        "server.h": "c"
     }
 }

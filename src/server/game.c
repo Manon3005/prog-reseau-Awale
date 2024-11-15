@@ -1,6 +1,7 @@
-#include "../headers/game.h"
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "../../headers/server/game.h"
 
 Game* initGame(Player* player0, Player* player1, int id)
 {

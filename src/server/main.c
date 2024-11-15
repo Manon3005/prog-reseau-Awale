@@ -1,6 +1,7 @@
-#include "../headers/game.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "../../headers/server/game.h"
 
 int main(){ //tester isGameOver
     

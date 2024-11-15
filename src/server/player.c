@@ -1,12 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "../headers/player.h"
 
-Player* initPlayer(char* username, int id){
+#include "../../headers/server/player.h"
+
+Player* initPlayer(char* username){
     Player* player = malloc(sizeof(Player));
     player->username = username;
     player->currentGameId = -1;
-    player->id = id;
     player->connectionState = 0;
     return player;
 }
