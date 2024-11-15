@@ -53,5 +53,7 @@ static void send_request(Client* sender, Client* receiver);
 static Client* get_sender_from_receiver(Request* requests, int actual, Client* receiver);
 static int get_request_index(Request *requests, int actual, Client* sender);
 static void remove_request(Request *requests, int to_remove, int *actual);
+static void print_game(Game* game, Client* client);
+static void print_board(Game* game, Client* client);
 
 #endif /* guard */

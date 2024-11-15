@@ -13,7 +13,7 @@ typedef struct Game
     int winner;
 } Game;
 
-void displayGame(Game*);
+int initGame(Game* game, char* player_0, char* player_1);
 int chooseHouse(Game*, int houseNb); // retour = camp d'arrivée
 void attributePoints(Game* game, int startHouse, int arrivalHouse);
 int playOneTurn(Game*); //retour = 1 si partie finie, 0 sinon

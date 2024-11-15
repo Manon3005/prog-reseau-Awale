@@ -182,7 +182,7 @@ static void app(void)
                               Request request = {client, requested_client};
                               requests[actualRequest] = request;
                               actualRequest++;
-                           } else if (requested_client->state == IN_GAME) {
+                           } else if (requested_client->state == IN_GAME_CURRENT_PLAYER || requested_client->state == IN_GAME_WAITING) {
                               write_client(client->sock, "This player is already playing a game. Try later.\n");
                               client->state = IN_MENU;
                               print_menu(client);
@@ -204,11 +204,28 @@ static void app(void)
                      if (strcmp("Y", buffer) == 0) {
                         write_client(client->sock, "Starting of the game.\n");
                         write_client(client_sender->sock, "Request accepted. Starting of the game.\n");
-                        client->state = IN_GAME;
-                        client_sender->state = IN_GAME;
+
                         int request_to_remove = get_request_index(requests, actualRequest, client_sender);
                         remove_request(requests, request_to_remove, (&actualRequest));
-                        //create game
+
+                        Game new_game;
+                        int current_player = initGame(&new_game, client_sender->name, client->name);
+                        games[actualGame] = new_game;
+                        client->current_game = (&games[actualGame]);
+                        client_sender->current_game = (&games[actualGame]);
+                        actualGame++;
+
+                        if (current_player == 0) {
+                           print_game(&new_game, client_sender);
+                           write_client(client->sock, "The other play starts. Wait for him to choose a house.\n");
+                           client->state = IN_GAME_WAITING;
+                           client_sender->state = IN_GAME_CURRENT_PLAYER;
+                        } else {
+                           print_game(&new_game, client);
+                           write_client(client_sender->sock, "The other player starts. Wait for him to choose a house.\n");
+                           client->state = IN_GAME_CURRENT_PLAYER;
+                           client_sender->state = IN_GAME_WAITING;
+                        }
                      } else if (strcmp("N", buffer) == 0) {
                         client->state = IN_MENU;
                         client_sender->state = IN_MENU;
@@ -221,6 +238,10 @@ static void app(void)
                      } else {
                         write_client(client->sock, "Wrong answer. Enter \"Y\" or \"N\" please.\n");
                      }
+                  } else if (client->state == IN_GAME_CURRENT_PLAYER) {
+
+                  } else if (client->state = IN_GAME_WAITING) {
+
                   }
                }
                break;
@@ -237,6 +258,57 @@ static Client* get_sender_from_receiver(Request* requests, int actual, Client* r
       }
    }
    return NULL;
+}
+
+static void print_game(Game* game, Client* client) 
+{
+   char str[2];
+   char message[BUF_SIZE];
+   message[0] = 0;
+   write_client(client->sock, "--------------------------------------\n");
+   print_board(game, client);
+   strcat(message, "Score ");
+   strcat(message, game->player[0]);
+   strcat(message, ": ");
+   sprintf(str, "%d", game->score[0]);
+   strcat(message, str);
+   strcat(message, "\n");
+   strcat(message, "Score ");
+   strcat(message, game->player[1]);
+   strcat(message, ": ");
+   sprintf(str, "%d", game->score[1]);
+   strcat(message, str);
+   strcat(message, "\n");
+   strcat(message, "--------------------------------------\n");
+   write_client(client->sock, message);
+}
+
+static void print_board(Game* game, Client* client)
+{
+   char message[BUF_SIZE];
+   message[0] = 0;
+   char str[2];
+   for (int i = 0 ; i < 6 ; i++) {
+      sprintf(str, "%d", game->board->houses[i]);
+      strcat(message, "[");
+      strcat(message, str);
+      strcat(message, "] ");
+   }
+   if (game->currentPlayer == 0) {
+      strcat(message, "  <- your side");
+   }
+   strcat(message, "\n");
+   for (int i = 11; i > 5 ; i--) {
+      sprintf(str, "%d", game->board->houses[i]);
+      strcat(message, "[");
+      strcat(message, str);
+      strcat(message, "] ");
+   }
+   if (game->currentPlayer == 1) {
+      strcat(message, "  <- your side");
+   }
+   strcat(message, "\n");
+   write_client(client->sock, message);
 }
 
 

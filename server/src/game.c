@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "../headers/game.h"
 
@@ -78,18 +79,6 @@ void attributePoints(Game* game, int startHouse, int arrivalHouse)
     }
 }
 
-void displayGame(Game* game) 
-{
-    printf("\n");
-    printf("--------------------------------------\n");
-    displayBoard(game->board, game->currentPlayer);
-    printf("\n");
-    printf("Score %s : %d\n", game->player[0], game->score[0]);
-    printf("Score %s : %d\n", game->player[1], game->score[1]);
-    printf("--------------------------------------\n");
-    printf("\n");
-}
-
 int isGameOver(Game* game) //à appeler avant le tour
 {
     int otherPlayer = (game->currentPlayer + 1) % 2;
@@ -138,7 +127,7 @@ int isThereFamine(Game* game)
 
 int playOneTurn(Game* game)
 {
-    displayGame(game);
+    //displayGame(game);
     int playerChoice;
     int isGood = 0;
     int result[] = {0, 0};

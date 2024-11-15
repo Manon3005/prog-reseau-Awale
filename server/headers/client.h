@@ -4,7 +4,7 @@
 #include "server.h"
 #include "game.h"
 
-typedef enum {IN_MENU, IN_CHALLENGE_FROM, IN_CHALLENGE_TO, IN_GAME, IN_CONNEXION, IN_REGISTER} State;
+typedef enum {IN_MENU, IN_CHALLENGE_FROM, IN_CHALLENGE_TO, IN_GAME_CURRENT_PLAYER, IN_GAME_WAITING, IN_CONNEXION, IN_REGISTER} State;
 
 typedef struct
 {
