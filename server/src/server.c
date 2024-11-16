@@ -165,11 +165,36 @@ static void app(void)
                      print_menu(client);
                   } else if (client->state == IN_CONNEXION) {
                      if (authenticateClient(csvManager, client->name, buffer)) {
-                        client->state = IN_MENU;
-                        addClientCsv(NULL, client->name, buffer);
                         write_client(client->sock, "You are now connected!\n");
-                        write_client(client->sock, "You can enter \"menu\" to display the menu.");
-                        print_menu(client);
+                        int wasInGame = 0;
+                        for(int i = 0; i < actual; i++){
+                           printf("player 1 : %s | player 2 : %s | client %s\n", games[i].player[0], games[i].player[1], client->name);
+                           if(strcmp(games[i].player[0], client->name) == 0 || strcmp(games[i].player[1], client->name) == 0 ){
+                              wasInGame = 1;
+                              client->current_game = &games[i];
+                              write_client(client->sock, "Reconnecting to the game..." );
+                              if((strcmp(games[i].player[games[i].currentPlayer], client->name) == 0 )){
+                                 client->state = IN_GAME_CURRENT_PLAYER;
+                                 write_client(client->sock, "This is your turn (after reconnection) \n");
+                                 print_game(&games[i], client);
+                              }
+                              else{
+                                 client->state = IN_GAME_WAITING;
+                                 write_client(client->sock, "Wait for your opponent to play (after reconnection) \n");
+                                 print_game(&games[i], client);
+                              }
+                              Client* otherPlayerClient = get_client_from_username(clients, actual, games[i].player[games[i].currentPlayer]);
+                              strncpy(buffer, client->name, BUF_SIZE - 1);
+                              strncat(buffer, " reconnected !", BUF_SIZE - strlen(buffer) - 1);
+                              write_client(otherPlayerClient->sock, buffer);
+                           }
+                        }
+                        if(!wasInGame){
+                           client->state = IN_MENU;
+                           write_client(client->sock, "You can enter \"menu\" to display the menu.");
+                           print_menu(client);
+                        }
+                        
                      } else {
                         write_client(client->sock, "Wrong password, enter your password again:");
                      }
@@ -322,7 +347,7 @@ static void print_game_end(Game* game, int status, Client* player_0, Client* pla
       write_client(player_1->sock, "Draw ! There is egality between the two players.\n");
    } else {
       char message[BUF_SIZE];
-      char str[2];
+      char str[10];
       message[0] = 0;
       strcat(message, "Congratulations to ");
       strcat(message, game->player[game->winner]);
@@ -355,7 +380,7 @@ static Client* get_sender_from_receiver(Request* requests, int actual, Client* r
 
 static void print_game(Game* game, Client* client) 
 {
-   char str[2];
+   char str[10];
    char message[BUF_SIZE];
    message[0] = 0;
    write_client(client->sock, "--------------------------------------\n");
@@ -380,7 +405,7 @@ static void print_board(Game* game, Client* client)
 {
    char message[BUF_SIZE];
    message[0] = 0;
-   char str[2];
+   char str[10];
    for (int i = 0 ; i < 6 ; i++) {
       sprintf(str, "%d", game->board->houses[i]);
       strcat(message, "[");
