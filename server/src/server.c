@@ -111,16 +111,26 @@ static void app(void)
 
          printf("Username : %s\n", buffer);
 
-         if (isCLientInCsv(csvManager, buffer)) {
+         int isAlreadyConnected = 0;
+         for(int i = 0; i < actual; i++){
+            if(strcmp(buffer,clients[i].name) == 0){
+               write_client(c.sock, "User already connected. End your previous connection to connect on this device.");
+               isAlreadyConnected = 1;
+            }
+         }
+         if(!isAlreadyConnected){
+            if (isCLientInCsv(csvManager, buffer)) {
             write_client(c.sock, "Please, enter your password:");
             c.state = IN_CONNEXION;
-         } else {
-            write_client(csock, "Welcome to our game !\n");
-            write_client(csock, "Please create a password:");
-            c.state = IN_REGISTER;
+            } else {
+               write_client(csock, "Welcome to our game !\n");
+               write_client(csock, "Please create a password:");
+               c.state = IN_REGISTER;
+            }
+            clients[actual] = c;
+            actual++;
          }
-         clients[actual] = c;
-         actual++;
+         printf("actual = %d\n", actual);
       }
       else
       {
