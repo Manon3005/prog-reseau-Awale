@@ -99,11 +99,11 @@ int isGameOver(Game* game) //à appeler avant le tour
     } else if (game->score[0] > 25) {
         game->winner = 0;
         printf("Congratulations to %s who wins the game with %d points\n", game->player[0], game->score[0]);
-        return 1;
+        return 2;
     } else if (game->score[1] > 25) {
         game->winner = 1;
         printf("Congratulations to %s who wins the game with %d points\n", game->player[1], game->score[1]);
-        return 1;
+        return ;
     } else {
         return 0; 
     }

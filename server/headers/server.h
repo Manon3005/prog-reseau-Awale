@@ -55,5 +55,7 @@ static int get_request_index(Request *requests, int actual, Client* sender);
 static void remove_request(Request *requests, int to_remove, int *actual);
 static void print_game(Game* game, Client* client);
 static void print_board(Game* game, Client* client);
+static Client* get_client_from_username(Client* clients, int actual, char* username);
+static void print_game_end(Game* game, int status, Client* player_0, Client* player_1);
 
 #endif /* guard */
