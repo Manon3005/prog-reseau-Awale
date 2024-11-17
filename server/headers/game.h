@@ -11,6 +11,7 @@ typedef struct Game
     int clockwise;
     int currentPlayer;
     int winner;
+    int paused;
 } Game;
 
 int initGame(Game* game, char* player_0, char* player_1);
