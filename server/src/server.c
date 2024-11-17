@@ -316,6 +316,7 @@ static void app(void)
                      }
                   } else if (client->state == IN_GAME_CURRENT_PLAYER) {
                      Game* game = client->current_game;
+                     Client* otherPlayerClient = get_client_from_username(clients, actual, game->player[(((game->currentPlayer)+1)%2)]);
                      if(!game->paused){
                         int playerChoice = atoi(buffer);
                         int isGood = 0;
@@ -338,18 +339,32 @@ static void app(void)
                                     isGood = 1;
                                  }
                               }
-                        } else {
-                              write_client(client->sock, "Incorrect choice. Please choose a number between 1 and 6.\n");
+                        } else if (strcmp(buffer, "ABANDON") == 0){
+                           otherPlayerClient->state = IN_SAVING_GAME;
+                           client->state = IN_SAVING_GAME;
+                           game->winner = game->player[(game->currentPlayer + 1) % 2];
+                           char newMoves [10];
+                           strcat(newMoves, buffer);
+                           strcat(newMoves, " ");
+                           strcpy(game->moves, &newMoves);
+                           print_game_end(game, 2, client, otherPlayerClient);
+                           
+                        }
+                        else {
+                           write_client(client->sock, "Incorrect choice. Please choose a number between 1 and 6 or abandon.\n");
                         }
                         if (isGood) {
                            int arrivalHouse = chooseHouse(game, houseNb);
+                           char newMoves [10];
+                           strcat(newMoves, buffer);
+                           strcat(newMoves, " ");
+                           strcpy(game->moves, &newMoves);
                            if (result[1] != getSeedNb(game->board, otherPlayer)) {
                               attributePoints(game, houseNb, arrivalHouse);
                            } else {
                               write_client(client->sock, "No capture because your opponent wouldn't have any seed left otherwise.\n");
                            }
                            game->currentPlayer = (game->currentPlayer + 1) % 2;
-                           Client* otherPlayerClient = get_client_from_username(clients, actual, game->player[game->currentPlayer]);
                            int is_game_over = isGameOver(game);
                            write_client(otherPlayerClient->sock, "Your opponent just played, here is the result:\n");
                            print_game(game, otherPlayerClient);
@@ -361,13 +376,9 @@ static void app(void)
                               write_client(otherPlayerClient->sock, "It's your turn to play! Which house do you choose ?\n");
                               write_client(client->sock, "Now, wait for your opponent to play.\n");
                            } else {
-                              otherPlayerClient->state = IN_MENU;
-                              client->state = IN_MENU;
-                              otherPlayerClient->current_game = NULL;
-                              client->current_game = NULL;
+                              otherPlayerClient->state = IN_SAVING_GAME;
+                              client->state = IN_SAVING_GAME;
                               print_game_end(game, is_game_over, client, otherPlayerClient);
-                              print_menu(client);
-                              print_menu(otherPlayerClient);
                            }
                         }
                      }
@@ -395,6 +406,23 @@ static void app(void)
                         print_bio(csvManager,buffer, client);
                         write_client(client->sock, "\nEnter another username to see their bio. Enter 'MENU' to come back to the menu when you are done.");
                      }
+                  } else if (client->state == IN_SAVING_GAME){
+                     if (strcmp("Y", buffer) == 0){
+                        char date [20];
+                        getCurrentDateTime(&date, sizeof(date));
+                        addGameToCsv(csvManager, client->current_game->player[0], client->current_game->player[1], client->current_game->moves, &date);
+                        client->current_game = NULL;
+                        client->current_game = NULL;
+                        client->state = IN_MENU;
+                        print_menu(client);
+                     } else if (strcmp("N", buffer) == 0){
+                        client->current_game = NULL;
+                        client->state = IN_MENU;
+                        print_menu(client);
+                     }
+                     else{
+                        write_client(client->sock, "Wrong answer. Enter \"Y\" or \"N\" please.\n");
+                     }
                   }
                }
                break;
@@ -408,7 +436,17 @@ static void print_game_end(Game* game, int status, Client* player_0, Client* pla
    if (status == 1) {
       write_client(player_0->sock, "Draw ! There is egality between the two players.\n");
       write_client(player_1->sock, "Draw ! There is egality between the two players.\n");
-   } else {
+   } else if (status == 2){
+      char message[BUF_SIZE];
+      char str[10];
+      message[0] = 0;
+      strcat(message, "Congratulations to ");
+      strcat(message, game->player[game->winner]);
+      strcat(message, " who wins the game by abandon of their opponent"); 
+      write_client(player_0->sock, message);
+      write_client(player_1->sock, message);
+   }
+   else {
       char message[BUF_SIZE];
       char str[10];
       message[0] = 0;
@@ -421,6 +459,8 @@ static void print_game_end(Game* game, int status, Client* player_0, Client* pla
       write_client(player_0->sock, message);
       write_client(player_1->sock, message);
    }
+   write_client(player_0->sock, "Do you want to save the game ? (Y/N)");
+   write_client(player_1->sock, "Do you want to save the game ? (Y/N)");
 }
 
 static Client* get_client_from_username(Client* clients, int actual, char* username) {

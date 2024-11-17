@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "../headers/csvManager.h"
 
@@ -124,11 +125,11 @@ char* getBioFromCsv(csvManager* csvManager, char* username) {
         return NULL;
     }
 
-    static char bio[1024]; // Mémoire statique pour retourner la bio
+    static char bio[1024]; 
     char line[1024];
 
     while (fgets(line, sizeof(line), file)) {
-        line[strcspn(line, "\r\n")] = 0; // Nettoyage des fins de ligne
+        line[strcspn(line, "\r\n")] = 0;
 
         char *file_username = strtok(line, ",");
         char *file_pwd = strtok(NULL, ",");
@@ -136,10 +137,10 @@ char* getBioFromCsv(csvManager* csvManager, char* username) {
 
         if (file_username && strcmp(file_username, username) == 0) {
             if (file_bio) {
-                strncpy(bio, file_bio, sizeof(bio) - 1); // Copie la bio dans la variable statique
-                bio[sizeof(bio) - 1] = '\0'; // Assure la terminaison de la chaîne
+                strncpy(bio, file_bio, sizeof(bio) - 1); 
+                bio[sizeof(bio) - 1] = '\0';
             } else {
-                bio[0] = '\0'; // Pas de bio, retourne une chaîne vide
+                bio[0] = '\0'; 
             }
             fclose(file);
             return bio;
@@ -148,4 +149,101 @@ char* getBioFromCsv(csvManager* csvManager, char* username) {
 
     fclose(file);
     return NULL; // Utilisateur non trouvé
+}
+
+
+int addGameToCsv(csvManager* csvManager, const char* player1, const char* player2, const char* moves, const char* date) {
+    FILE *file = fopen("data/games.csv", "a");
+    if (file == NULL) {
+        printf("Impossible d'ouvrir le fichier\n");
+        return 0;
+    }
+
+    fprintf(file, "%s,%s,%s,%s\n", player1, player2, moves, date);
+    fclose(file);
+    return 1;
+}
+
+void getCurrentDateTime(char* dateBuffer, size_t size) {
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    snprintf(dateBuffer, size, "%04d-%02d-%02d %02d:%02d", 
+             tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, 
+             tm.tm_hour, tm.tm_min);
+}
+
+int getMovesFromPlayersAndDate(csvManager* csvManager, const char* player1, const char* player2, const char* date, char* moves) {
+    FILE *file = fopen("data/games.csv", "r");
+    if (file == NULL) {
+        printf("Impossible d'ouvrir le fichier\n");
+        return 0;
+    }
+
+    char line[1024];
+    while (fgets(line, sizeof(line), file)) {
+        line[strcspn(line, "\r\n")] = 0; 
+
+        char *file_player1 = strtok(line, ",");
+        char *file_player2 = strtok(NULL, ",");
+        char *file_moves = strtok(NULL, ",");
+        char *file_date = strtok(NULL, ",");
+
+        if (file_player1 && file_player2 && file_date && 
+            strcmp(file_player1, player1) == 0 && 
+            strcmp(file_player2, player2) == 0 && 
+            strcmp(file_date, date) == 0) {
+            // Partie trouvée, copie les coups
+            strncpy(moves, file_moves, 1024);
+            fclose(file);
+            return 1;
+        }
+    }
+
+    fclose(file);
+    return 0; // Partie non trouvée
+}
+
+int getGamesByPlayer(const char* username, SavedGame** games, int* gameCount) {
+    FILE *file = fopen("data/games.csv", "r");
+    if (file == NULL) {
+        printf("Impossible d'ouvrir le fichier\n");
+        return 0;
+    }
+
+    char line[1024];
+    *gameCount = 0;
+    *games = NULL;
+
+    while (fgets(line, sizeof(line), file)) {
+        line[strcspn(line, "\r\n")] = 0; 
+
+        char *file_player1 = strtok(line, ",");
+        char *file_player2 = strtok(NULL, ",");
+        char *file_moves = strtok(NULL, ",");
+        char *file_date = strtok(NULL, ",");
+
+        if (!file_player1 || !file_player2 || !file_moves || !file_date) {
+            continue; 
+        }
+
+        if (strcmp(file_player1, username) == 0 || strcmp(file_player2, username) == 0) {
+            *games = realloc(*games, (*gameCount + 1) * sizeof(SavedGame));
+            if (*games == NULL) {
+                printf("Erreur d'allocation mémoire\n");
+                fclose(file);
+                return 0;
+            }
+
+            // Copie des infos dans la struc SavedGame
+            strncpy((*games)[*gameCount].player1, file_player1, 256);
+            strncpy((*games)[*gameCount].player2, file_player2, 256);
+            strncpy((*games)[*gameCount].moves, file_moves, 1024);
+            strncpy((*games)[*gameCount].date, file_date, 20);
+
+            (*gameCount)++;
+        }
+    }
+
+    fclose(file);
+    return 1; // Succès
 }
