@@ -217,10 +217,10 @@ int getGamesByPlayer(const char* username, SavedGame** games, int* gameCount) {
     while (fgets(line, sizeof(line), file)) {
         line[strcspn(line, "\r\n")] = 0; 
 
-        char *file_player1 = strtok(line, ",");
-        char *file_player2 = strtok(NULL, ",");
-        char *file_moves = strtok(NULL, ",");
-        char *file_date = strtok(NULL, ",");
+        char* file_player1 = strtok(line, ",");
+        char* file_player2 = strtok(NULL, ",");
+        char* file_moves = strtok(NULL, ",");
+        char* file_date = strtok(NULL, ",");
 
         if (!file_player1 || !file_player2 || !file_moves || !file_date) {
             continue; 

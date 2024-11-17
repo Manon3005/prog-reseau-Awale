@@ -180,7 +180,6 @@ static void app(void)
                   strncpy(buffer, client->name, BUF_SIZE - 1);
                   strncat(buffer, " disconnected !", BUF_SIZE - strlen(buffer) - 1);
                   send_message_to_all_clients(clients, (*client), actual, buffer, 1);
-                  
                }
                else
                {
@@ -244,6 +243,9 @@ static void app(void)
                      } else if (strcmp("4", buffer) == 0){
                         client->state = IN_CONSULTING_BIO;
                         write_client(client->sock, "Enter the name of the player you want to challenge:");
+                     } else if (strcmp("5", buffer) == 0){
+                        print_player_archives(client);
+                        print_menu(client);
                      }
                      
                   } else if (client->state == IN_CHALLENGE_FROM) {
@@ -432,6 +434,37 @@ static void app(void)
    }
 }
 
+void print_player_archives(Client* client){
+   SavedGame* games = NULL;
+   int gameCount = 0;
+
+   if (getGamesByPlayer(client->name, &games, &gameCount)) {
+      char message[BUF_SIZE];
+      message[0] = 0;
+      char str[10];
+      strcat(message, "Number of games : ");
+      intToStr(gameCount, str, 10);
+      strcat(message, str);
+      strcat(message, "\n");
+      for (int i = 0; i < gameCount; i++) {
+         strcat(message, "Game ");
+         intToStr(i + 1, str, 10);
+         strcat(message, str);
+         strcat(message, " : ");
+         strcat(message, games[i].player1);
+         strcat(message, " vs ");
+         strcat(message, games[i].player2);
+         strcat(message, "  Date: ");
+         strcat(message, games[i].date);
+         strcat(message, "\n");
+      }
+      write_client(client->sock, message);
+      free(games);
+   } else {
+      write_client(client->sock, "No game saved");
+   }
+}
+
 static void print_game_end(Game* game, int status, Client* player_0, Client* player_1) {
    if (status == 1) {
       write_client(player_0->sock, "Draw ! There is egality between the two players.\n");
@@ -563,6 +596,7 @@ static void print_menu(Client *client) {
    write_client(client->sock, "[2] Challenge a player\n");
    write_client(client->sock, "[3] Change your bio\n");
    write_client(client->sock, "[4] Read a player's bio\n");
+   write_client(client->sock, "[5] See your games' archives\n");
    write_client(client->sock, "Option selected:");
 }
 
@@ -574,6 +608,10 @@ void print_bio(csvManager* csvManager, char* username, Client* receiver){
    else{
       write_client(receiver->sock, "Ce joueur n'existe pas");
    }
+}
+
+void intToStr(int value, char* buffer, size_t size) {
+    snprintf(buffer, size, "%d", value); // Convertit 'value' en chaîne
 }
 
 static void clear_clients(Client *clients, int actual)
