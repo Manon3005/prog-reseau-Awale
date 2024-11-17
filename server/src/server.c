@@ -312,7 +312,7 @@ static void print_game_end(Game* game, int status, Client* player_0, Client* pla
       write_client(player_1->sock, "Draw ! There is egality between the two players.\n");
    } else {
       char message[BUF_SIZE];
-      char str[2];
+      char str[10];
       message[0] = 0;
       strcat(message, "Congratulations to ");
       strcat(message, game->player[game->winner]);
@@ -345,7 +345,7 @@ static Client* get_sender_from_receiver(Request* requests, int actual, Client* r
 
 static void print_game(Game* game, Client* client) 
 {
-   char str[2];
+   char str[10];
    char message[BUF_SIZE];
    message[0] = 0;
    write_client(client->sock, "--------------------------------------\n");
@@ -370,7 +370,7 @@ static void print_board(Game* game, Client* client)
 {
    char message[BUF_SIZE];
    message[0] = 0;
-   char str[2];
+   char str[10];
    for (int i = 0 ; i < 6 ; i++) {
       sprintf(str, "%d", game->board->houses[i]);
       strcat(message, "[");

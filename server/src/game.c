@@ -96,11 +96,11 @@ int isGameOver(Game* game) //à appeler avant le tour
     if (game->score[0] == 24 && game->score[1] == 24) {
         printf("Draw ! There is egality between the two players.\n");
         return 1;
-    } else if (game->score[0] > 25) {
+    } else if (game->score[0] > 24) {
         game->winner = 0;
         printf("Congratulations to %s who wins the game with %d points\n", game->player[0], game->score[0]);
         return 2;
-    } else if (game->score[1] > 25) {
+    } else if (game->score[1] > 24) {
         game->winner = 1;
         printf("Congratulations to %s who wins the game with %d points\n", game->player[1], game->score[1]);
         return ;
@@ -123,45 +123,4 @@ int isThereFamine(Game* game)
         return 1;
     }
     return 0;
-}
-
-int playOneTurn(Game* game)
-{
-    //displayGame(game);
-    int playerChoice;
-    int isGood = 0;
-    int result[] = {0, 0};
-    int otherPlayer = (game->currentPlayer + 1) % 2;
-    int houseNb;
-    printf("%s, which house do you choose ?\n", game->player[game->currentPlayer]);
-    while (!isGood) {
-        scanf("%d", &playerChoice);
-        if (playerChoice > 0 && playerChoice < 7) {
-            if (game->currentPlayer == 0) {
-                houseNb = playerChoice - 1;
-            } else {
-                houseNb = 12 - playerChoice;
-            }
-            if (game->board->houses[houseNb] == 0) {
-                printf("You must choose a house with at least one seed in it. Please select another house.\n");
-            } else {
-                simulateChoose(game, houseNb, result);
-                if (getSeedNb(game->board, otherPlayer) == 0 && result[0] == 0) {
-                    printf("You can't starve your opponent. Please select another house.\n");
-                } else {
-                    isGood = 1;
-                }
-            }
-        } else {
-            printf("Incorrect choice. Please choose a number between 1 and 6.\n");
-        }
-    }
-    int arrivalHouse = chooseHouse(game, houseNb);
-    if (result[1] != getSeedNb(game->board, otherPlayer)) {
-        attributePoints(game, houseNb, arrivalHouse);
-    } else {
-        printf("No capture because your opponent wouldn't have any seed left otherwise.\n");
-    }
-    game->currentPlayer = (game->currentPlayer + 1) % 2;
-    return isGameOver(game);
 }
