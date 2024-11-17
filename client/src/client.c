@@ -80,6 +80,9 @@ static void app(const char *address, const char *name)
             break;
          }
          puts(buffer);
+         if(strcmp(buffer,"User already connected. End your previous connection to connect on this device.")==0){
+            break;
+         }
       }
    }
 

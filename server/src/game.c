@@ -11,6 +11,7 @@ int initGame(Game* game, char* player_0, char* player_1)
     game->board = initBoard();
     strcpy(game->player[0], player_0);
     strcpy(game->player[1], player_1);
+    game->paused = 0;
     return game->currentPlayer;
 }
 

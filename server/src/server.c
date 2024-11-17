@@ -111,16 +111,26 @@ static void app(void)
 
          printf("Username : %s\n", buffer);
 
-         if (isCLientInCsv(csvManager, buffer)) {
+         int isAlreadyConnected = 0;
+         for(int i = 0; i < actual; i++){
+            if(strcmp(buffer,clients[i].name) == 0){
+               write_client(c.sock, "User already connected. End your previous connection to connect on this device.");
+               isAlreadyConnected = 1;
+            }
+         }
+         if(!isAlreadyConnected){
+            if (isCLientInCsv(csvManager, buffer)) {
             write_client(c.sock, "Please, enter your password:");
             c.state = IN_CONNEXION;
-         } else {
-            write_client(csock, "Welcome to our game !\n");
-            write_client(csock, "Please create a password:");
-            c.state = IN_REGISTER;
+            } else {
+               write_client(csock, "Welcome to our game !\n");
+               write_client(csock, "Please create a password:");
+               c.state = IN_REGISTER;
+            }
+            clients[actual] = c;
+            actual++;
          }
-         clients[actual] = c;
-         actual++;
+         printf("actual = %d\n", actual);
       }
       else
       {
@@ -137,6 +147,35 @@ static void app(void)
                if(c == 0)
                {
                   closesocket(clients[i].sock);
+                  
+                  printf("test 1\n");
+                  for(int i = 0; i < actualRequest; i++){
+                     if(strcmp(requests[i].sender->name, client->name) == 0){
+                        write_client(requests[i].receiver->sock, "The request was cancelled because the person who challenged you disconnected");
+                        requests[i].receiver->state = IN_MENU;
+                        int request_to_remove = get_request_index(requests, actualRequest, client);
+                        remove_request(requests, request_to_remove, (&actualRequest));
+                     }
+                     if(strcmp(requests[i].receiver->name, client->name) == 0){
+                        write_client(requests[i].sender->sock, "The request was cancelled because the person you challenged disconnected");
+                        requests[i].sender->state = IN_MENU;
+                        int request_to_remove = get_request_index(requests, actualRequest, get_sender_from_receiver(requests, actualRequest, client));
+                        remove_request(requests, request_to_remove, (&actualRequest));
+                     }
+                  }
+                  for(int i = 0; i < actualGame; i++){
+                     if(strcmp(games[i].player[0], client->name) == 0 || strcmp(games[i].player[1], client->name) == 0 ){
+                        games[i].paused = 1;
+                        if(strcmp(games[i].player[0],client->name) == 0){
+                           Client* otherPlayerClient = get_client_from_username(clients, actual, games[i].player[1]);
+                           write_client(otherPlayerClient->sock, "Your opponent disconnected. Please wait for him to reconnect.");
+                        }
+                        else{
+                           Client* otherPlayerClient = get_client_from_username(clients, actual, games[i].player[0]);
+                           write_client(otherPlayerClient->sock, "Your opponent disconnected. Please wait for him to reconnect.");
+                        }
+                     }
+                  }
                   remove_client(clients, i, &actual);
                   strncpy(buffer, client->name, BUF_SIZE - 1);
                   strncat(buffer, " disconnected !", BUF_SIZE - strlen(buffer) - 1);
@@ -155,11 +194,36 @@ static void app(void)
                      print_menu(client);
                   } else if (client->state == IN_CONNEXION) {
                      if (authenticateClient(csvManager, client->name, buffer)) {
-                        client->state = IN_MENU;
-                        addClientCsv(NULL, client->name, buffer);
                         write_client(client->sock, "You are now connected!\n");
-                        write_client(client->sock, "You can enter \"menu\" to display the menu.");
-                        print_menu(client);
+                        int wasInGame = 0;
+                        for(int i = 0; i < actual; i++){
+                           if(strcmp(games[i].player[0], client->name) == 0 || strcmp(games[i].player[1], client->name) == 0 ){
+                              wasInGame = 1;
+                              client->current_game = &games[i];
+                              games[i].paused = 0;
+                              write_client(client->sock, "Reconnecting to the game..." );
+                              if((strcmp(games[i].player[games[i].currentPlayer], client->name) == 0 )){
+                                 client->state = IN_GAME_CURRENT_PLAYER;
+                                 write_client(client->sock, "This is your turn (after reconnection) \n");
+                                 print_game(&games[i], client);
+                              }
+                              else{
+                                 client->state = IN_GAME_WAITING;
+                                 write_client(client->sock, "Wait for your opponent to play (after reconnection) \n");
+                                 print_game(&games[i], client);
+                              }
+                              Client* otherPlayerClient = get_client_from_username(clients, actual, games[i].player[games[i].currentPlayer]);
+                              strncpy(buffer, client->name, BUF_SIZE - 1);
+                              strncat(buffer, " reconnected !", BUF_SIZE - strlen(buffer) - 1);
+                              write_client(otherPlayerClient->sock, buffer);
+                           }
+                        }
+                        if(!wasInGame){
+                           client->state = IN_MENU;
+                           write_client(client->sock, "You can enter \"menu\" to display the menu.");
+                           print_menu(client);
+                        }
+                        
                      } else {
                         write_client(client->sock, "Wrong password, enter your password again:");
                      }
@@ -171,7 +235,19 @@ static void app(void)
                      } else if (strcmp("2", buffer) == 0){
                         client->state = IN_CHALLENGE_FROM;
                         write_client(client->sock, "Enter the name of the player you want to challenge:");
+                     } else if (strcmp("3", buffer) == 0){
+                        client->state = IN_CHANGING_BIO;
+                        write_client(client->sock, "Your previous bio :");
+                        print_bio(csvManager,client->name, client);
+                        write_client(client->sock, "\nEnter your new bio :");
+                     } else if (strcmp("4", buffer) == 0){
+                        client->state = IN_CONSULTING_BIO;
+                        write_client(client->sock, "Enter the name of the player you want to challenge:");
+                     } else if (strcmp("5", buffer) == 0){
+                        print_player_archives(client);
+                        print_menu(client);
                      }
+                     
                   } else if (client->state == IN_CHALLENGE_FROM) {
                      if (strcmp(buffer, client->name) != 0) {
                         Client* requested_client = is_client_connected(clients, actual, buffer);
@@ -179,7 +255,7 @@ static void app(void)
                            if (requested_client->state == IN_MENU) {
                               write_client(client->sock, "Request sent to the other player.\n");
                               send_request(client, requested_client);
-                              Request request = {client, requested_client};
+                              Request request = {.sender = client, .receiver = requested_client};
                               requests[actualRequest] = request;
                               actualRequest++;
                            } else if (requested_client->state == IN_GAME_CURRENT_PLAYER || requested_client->state == IN_GAME_WAITING) {
@@ -242,61 +318,113 @@ static void app(void)
                      }
                   } else if (client->state == IN_GAME_CURRENT_PLAYER) {
                      Game* game = client->current_game;
-                     int playerChoice = atoi(buffer);
-                     int isGood = 0;
-                     int result[] = {0, 0};
-                     int otherPlayer = (game->currentPlayer + 1) % 2;
-                     int houseNb;
-                     if (playerChoice > 0 && playerChoice < 7) {
-                           if (game->currentPlayer == 0) {
-                              houseNb = playerChoice - 1;
-                           } else {
-                              houseNb = 12 - playerChoice;
-                           }
-                           if (game->board->houses[houseNb] == 0) {
-                              write_client(client->sock, "You must choose a house with at least one seed in it. Please select another house.\n");
-                           } else {
-                              simulateChoose(game, houseNb, result);
-                              if (getSeedNb(game->board, otherPlayer) == 0 && result[0] == 0) {
-                                 write_client(client->sock, "You can't starve your opponent. Please select another house.\n");
+                     Client* otherPlayerClient = get_client_from_username(clients, actual, game->player[(((game->currentPlayer)+1)%2)]);
+                     if(!game->paused){
+                        int playerChoice = atoi(buffer);
+                        int isGood = 0;
+                        int result[] = {0, 0};
+                        int otherPlayer = (game->currentPlayer + 1) % 2;
+                        int houseNb;
+                        if (playerChoice > 0 && playerChoice < 7) {
+                              if (game->currentPlayer == 0) {
+                                 houseNb = playerChoice - 1;
                               } else {
-                                 isGood = 1;
+                                 houseNb = 12 - playerChoice;
                               }
+                              if (game->board->houses[houseNb] == 0) {
+                                 write_client(client->sock, "You must choose a house with at least one seed in it. Please select another house.\n");
+                              } else {
+                                 simulateChoose(game, houseNb, result);
+                                 if (getSeedNb(game->board, otherPlayer) == 0 && result[0] == 0) {
+                                    write_client(client->sock, "You can't starve your opponent. Please select another house.\n");
+                                 } else {
+                                    isGood = 1;
+                                 }
+                              }
+                        } else if (strcmp(buffer, "ABANDON") == 0){
+                           otherPlayerClient->state = IN_SAVING_GAME;
+                           client->state = IN_SAVING_GAME;
+                           game->winner = game->player[(game->currentPlayer + 1) % 2];
+                           char newMoves [10];
+                           strcat(newMoves, buffer);
+                           strcat(newMoves, " ");
+                           strcpy(game->moves, &newMoves);
+                           print_game_end(game, 2, client, otherPlayerClient);
+                           
+                        }
+                        else {
+                           write_client(client->sock, "Incorrect choice. Please choose a number between 1 and 6 or abandon.\n");
+                        }
+                        if (isGood) {
+                           int arrivalHouse = chooseHouse(game, houseNb);
+                           char newMoves [10];
+                           strcat(newMoves, buffer);
+                           strcat(newMoves, " ");
+                           strcpy(game->moves, &newMoves);
+                           if (result[1] != getSeedNb(game->board, otherPlayer)) {
+                              attributePoints(game, houseNb, arrivalHouse);
+                           } else {
+                              write_client(client->sock, "No capture because your opponent wouldn't have any seed left otherwise.\n");
                            }
-                     } else {
-                           write_client(client->sock, "Incorrect choice. Please choose a number between 1 and 6.\n");
-                     }
-                     if (isGood) {
-                        int arrivalHouse = chooseHouse(game, houseNb);
-                        if (result[1] != getSeedNb(game->board, otherPlayer)) {
-                           attributePoints(game, houseNb, arrivalHouse);
-                        } else {
-                           write_client(client->sock, "No capture because your opponent wouldn't have any seed left otherwise.\n");
-                        }
-                        game->currentPlayer = (game->currentPlayer + 1) % 2;
-                        Client* otherPlayerClient = get_client_from_username(clients, actual, game->player[game->currentPlayer]);
-                        int is_game_over = isGameOver(game);
-                        write_client(otherPlayerClient->sock, "Your opponent just played, here is the result:\n");
-                        print_game(game, otherPlayerClient);
-                        write_client(client->sock, "Thanks for your choice. Here is the result:\n");
-                        print_game(game, client);
-                        if (is_game_over == 0) {
-                           otherPlayerClient->state = IN_GAME_CURRENT_PLAYER;
-                           client->state = IN_GAME_WAITING;
-                           write_client(otherPlayerClient->sock, "It's your turn to play! Which house do you choose ?\n");
-                           write_client(client->sock, "Now, wait for your opponent to play.\n");
-                        } else {
-                           otherPlayerClient->state = IN_MENU;
-                           client->state = IN_MENU;
-                           otherPlayerClient->current_game = NULL;
-                           client->current_game = NULL;
-                           print_game_end(game, is_game_over, client, otherPlayerClient);
-                           print_menu(client);
-                           print_menu(otherPlayerClient);
+                           game->currentPlayer = (game->currentPlayer + 1) % 2;
+                           int is_game_over = isGameOver(game);
+                           write_client(otherPlayerClient->sock, "Your opponent just played, here is the result:\n");
+                           print_game(game, otherPlayerClient);
+                           write_client(client->sock, "Thanks for your choice. Here is the result:\n");
+                           print_game(game, client);
+                           if (is_game_over == 0) {
+                              otherPlayerClient->state = IN_GAME_CURRENT_PLAYER;
+                              client->state = IN_GAME_WAITING;
+                              write_client(otherPlayerClient->sock, "It's your turn to play! Which house do you choose ?\n");
+                              write_client(client->sock, "Now, wait for your opponent to play.\n");
+                           } else {
+                              otherPlayerClient->state = IN_SAVING_GAME;
+                              client->state = IN_SAVING_GAME;
+                              print_game_end(game, is_game_over, client, otherPlayerClient);
+                           }
                         }
                      }
+                     else{
+                        write_client(client->sock,"Wait for you opponent to reconnect.");
+                     }
+                     
                   } else if (client->state == IN_GAME_WAITING) {
                      write_client(client->sock, "It's not your turn to play. Please, wait for the other player!");
+                  } else if (client->state == IN_CHANGING_BIO) {
+                     int bioChanged = changeBioCsv(csvManager, client->name, buffer);
+                     if (bioChanged){
+                        write_client(client->sock, "Bio changed. Returning to menu\n");
+                     } else{
+                        write_client(client->sock, "A problem happened. Please try again later.");
+                     }
+                     print_menu(client);
+                     client->state = IN_MENU;
+                  } else if (client->state == IN_CONSULTING_BIO){
+                     if(strcmp(buffer,"MENU") == 0){
+                        client->state = IN_MENU;
+                        print_menu(client);
+                     }
+                     else{
+                        print_bio(csvManager,buffer, client);
+                        write_client(client->sock, "\nEnter another username to see their bio. Enter 'MENU' to come back to the menu when you are done.");
+                     }
+                  } else if (client->state == IN_SAVING_GAME){
+                     if (strcmp("Y", buffer) == 0){
+                        char date [20];
+                        getCurrentDateTime(&date, sizeof(date));
+                        addGameToCsv(csvManager, client->current_game->player[0], client->current_game->player[1], client->current_game->moves, &date);
+                        client->current_game = NULL;
+                        client->current_game = NULL;
+                        client->state = IN_MENU;
+                        print_menu(client);
+                     } else if (strcmp("N", buffer) == 0){
+                        client->current_game = NULL;
+                        client->state = IN_MENU;
+                        print_menu(client);
+                     }
+                     else{
+                        write_client(client->sock, "Wrong answer. Enter \"Y\" or \"N\" please.\n");
+                     }
                   }
                }
                break;
@@ -306,11 +434,52 @@ static void app(void)
    }
 }
 
+void print_player_archives(Client* client){
+   SavedGame* games = NULL;
+   int gameCount = 0;
+
+   if (getGamesByPlayer(client->name, &games, &gameCount)) {
+      char message[BUF_SIZE];
+      message[0] = 0;
+      char str[10];
+      strcat(message, "Number of games : ");
+      intToStr(gameCount, str, 10);
+      strcat(message, str);
+      strcat(message, "\n");
+      for (int i = 0; i < gameCount; i++) {
+         strcat(message, "Game ");
+         intToStr(i + 1, str, 10);
+         strcat(message, str);
+         strcat(message, " : ");
+         strcat(message, games[i].player1);
+         strcat(message, " vs ");
+         strcat(message, games[i].player2);
+         strcat(message, "  Date: ");
+         strcat(message, games[i].date);
+         strcat(message, "\n");
+      }
+      write_client(client->sock, message);
+      free(games);
+   } else {
+      write_client(client->sock, "No game saved");
+   }
+}
+
 static void print_game_end(Game* game, int status, Client* player_0, Client* player_1) {
    if (status == 1) {
       write_client(player_0->sock, "Draw ! There is egality between the two players.\n");
       write_client(player_1->sock, "Draw ! There is egality between the two players.\n");
-   } else {
+   } else if (status == 2){
+      char message[BUF_SIZE];
+      char str[10];
+      message[0] = 0;
+      strcat(message, "Congratulations to ");
+      strcat(message, game->player[game->winner]);
+      strcat(message, " who wins the game by abandon of their opponent"); 
+      write_client(player_0->sock, message);
+      write_client(player_1->sock, message);
+   }
+   else {
       char message[BUF_SIZE];
       char str[10];
       message[0] = 0;
@@ -323,6 +492,8 @@ static void print_game_end(Game* game, int status, Client* player_0, Client* pla
       write_client(player_0->sock, message);
       write_client(player_1->sock, message);
    }
+   write_client(player_0->sock, "Do you want to save the game ? (Y/N)");
+   write_client(player_1->sock, "Do you want to save the game ? (Y/N)");
 }
 
 static Client* get_client_from_username(Client* clients, int actual, char* username) {
@@ -423,7 +594,24 @@ static void print_menu(Client *client) {
    write_client(client->sock, "Please select an option.\n");
    write_client(client->sock, "[1] Online players list\n");
    write_client(client->sock, "[2] Challenge a player\n");
+   write_client(client->sock, "[3] Change your bio\n");
+   write_client(client->sock, "[4] Read a player's bio\n");
+   write_client(client->sock, "[5] See your games' archives\n");
    write_client(client->sock, "Option selected:");
+}
+
+void print_bio(csvManager* csvManager, char* username, Client* receiver){
+   char * bio = getBioFromCsv(csvManager, username);
+   if(bio){
+      write_client(receiver->sock, bio);
+   }
+   else{
+      write_client(receiver->sock, "Ce joueur n'existe pas");
+   }
+}
+
+void intToStr(int value, char* buffer, size_t size) {
+    snprintf(buffer, size, "%d", value); // Convertit 'value' en chaîne
 }
 
 static void clear_clients(Client *clients, int actual)
