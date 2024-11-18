@@ -12,6 +12,7 @@ int initGame(Game* game, char* player_0, char* player_1)
     strcpy(game->player[0], player_0);
     strcpy(game->player[1], player_1);
     game->paused = 0;
+    game->nb_observer = 0;
     return game->currentPlayer;
 }
 
@@ -124,4 +125,29 @@ int isThereFamine(Game* game)
         return 1;
     }
     return 0;
+}
+
+int add_observer(Game* game, char* username) 
+{
+    if (game->nb_observer < 10) {
+        strcpy(game->observer[game->nb_observer], username);
+        (game->nb_observer)++;
+        return 1;
+    }
+    return 0;
+}
+
+void remove_observer(Game* game, char* username)
+{
+    int index = -1;
+    for (int i = 0 ; i < game->nb_observer ; i++) {
+        if (strcmp(game->observer[i], username) == 0) {
+            index = i;
+        }
+    }
+    if (index > -1) {
+        memmove(game + index, game + index + 1, (game->nb_observer - index - 1) * sizeof(char[1024]));
+        /* number client - 1 */
+        (game->nb_observer)--; 
+    }
 }
