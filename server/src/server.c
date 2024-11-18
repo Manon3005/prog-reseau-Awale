@@ -291,17 +291,21 @@ static void app(void)
                      } else if (strcmp("6", buffer) == 0) {
                         client->state = IN_OBSERVE_REQUEST;
                         write_client(client->sock, "Enter the name of the player you want to watch:");
+                     } else {
+                        write_client(client->sock, "The selected option doesn't exit. Here is the menu:\n");
+                        print_menu(client);
                      }
                   } else if (client->state == IN_CHALLENGE_FROM) {
                      if (strcmp(buffer, client->name) != 0) {
                         Client* requested_client = is_client_connected(clients, actual, buffer);
                         if (requested_client) {
                            if (requested_client->state == IN_MENU) {
-                              write_client(client->sock, "Request sent to the other player.\n");
+                              write_client(client->sock, "Request sent to the other player. You can enter \"ABANDON\" to abandon your request.\n");
                               send_request(client, requested_client);
                               Request request = {.sender = client, .receiver = requested_client};
                               requests[actualRequest] = request;
                               actualRequest++;
+                              client->state = IN_CHALLENGE_WAIT;
                            } else if (requested_client->state == IN_GAME_CURRENT_PLAYER || requested_client->state == IN_GAME_WAITING) {
                               write_client(client->sock, "This player is already playing a game. Try later.\n");
                               client->state = IN_MENU;
@@ -318,6 +322,21 @@ static void app(void)
                         }
                      } else {
                         write_client(client->sock, "You can't challenge yourself.\n");
+                     }
+                  } else if (client->state == IN_CHALLENGE_WAIT) {
+                     if (strcmp(buffer, "ABANDON") == 0) {
+                        Client* client_receiver = get_receiver_from_sender(requests, actualRequest, client);
+
+                        int request_to_remove = get_request_index(requests, actualRequest, client);
+                        remove_request(requests, request_to_remove, (&actualRequest));
+
+                        write_client(client_receiver->sock, client->name);
+                        write_client(client_receiver->sock, " abandoned its game request. You're back in the menu.\n");
+                        client_receiver->state = IN_MENU;
+                        client->state = IN_MENU;
+                        write_client(client->sock, "You're back in the menu.\n");
+                     } else {
+                        write_client(client->sock, "Wait for the other player to answer your request.\n");
                      }
                   } else if (client->state == IN_CHALLENGE_TO) {
                      Client* client_sender = get_sender_from_receiver(requests, actualRequest, client);
@@ -593,6 +612,15 @@ static Client* get_sender_from_receiver(Request* requests, int actual, Client* r
    for (int i = 0 ; i < actual ; i++) {
       if (requests[i].receiver ==  receiver) {
          return (requests[i].sender);
+      }
+   }
+   return NULL;
+}
+
+static Client* get_receiver_from_sender(Request* requests, int actual, Client* sender) {
+   for (int i = 0 ; i < actual ; i++) {
+      if (requests[i].sender ==  sender) {
+         return (requests[i].receiver);
       }
    }
    return NULL;

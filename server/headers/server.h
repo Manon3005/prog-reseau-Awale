@@ -57,5 +57,6 @@ static void print_game(Game* game, Client* client, int in_choice);
 static void print_board(Game* game, Client* client, int in_choice);
 static Client* get_client_from_username(Client* clients, int actual, char* username);
 static void print_game_end(Game* game, int status, Client* player_0, Client* player_1);
+static Client* get_receiver_from_sender(Request* requests, int actual, Client* sender);
 
 #endif /* guard */

@@ -15,6 +15,7 @@ typedef struct Game
     char moves[1024];
     char observer[10][1024];
     int nb_observer;
+    int is_private;
 } Game;
 
 int initGame(Game* game, char* player_0, char* player_1);
