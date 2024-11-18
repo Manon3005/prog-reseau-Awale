@@ -13,6 +13,8 @@ typedef struct Game
     int winner;
     int paused;
     char moves[1024];
+    char observer[10][1024];
+    int nb_observer;
 } Game;
 
 int initGame(Game* game, char* player_0, char* player_1);
@@ -21,5 +23,7 @@ void attributePoints(Game* game, int startHouse, int arrivalHouse);
 int isGameOver(Game*);
 int isThereFamine(Game*);
 void simulateChoose(Game*, int houseNb, int* result);
+int add_observer(Game* game, char* username);
+void remove_observer(Game* game, char* username);
 
 #endif
