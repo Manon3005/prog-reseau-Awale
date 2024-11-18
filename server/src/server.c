@@ -284,7 +284,7 @@ static void app(void)
                         write_client(client->sock, "\nEnter your new bio :");
                      } else if (strcmp("4", buffer) == 0){
                         client->state = IN_CONSULTING_BIO;
-                        write_client(client->sock, "Enter the name of the player you want to challenge:");
+                        write_client(client->sock, "Enter a player username to see their bio:");
                      } else if (strcmp("5", buffer) == 0){
                         print_player_archives(client);
                         print_menu(client);
@@ -388,13 +388,13 @@ static void app(void)
                         } else if (strcmp(buffer, "ABANDON") == 0){
                            otherPlayerClient->state = IN_SAVING_GAME;
                            client->state = IN_SAVING_GAME;
-                           game->winner = game->player[(game->currentPlayer + 1) % 2];
-                           char newMoves [10];
+                           game->winner = (game->currentPlayer + 1) % 2;
+                           char newMoves[10];
+                           newMoves[0] = 0;
                            strcat(newMoves, buffer);
                            strcat(newMoves, " ");
                            strcpy(game->moves, &newMoves);
                            print_game_end(game, 2, client, otherPlayerClient);
-                           
                         }
                         else {
                            write_client(client->sock, "Incorrect choice. Please choose a number between 1 and 6 or abandon.\n");
@@ -691,7 +691,7 @@ void print_bio(csvManager* csvManager, char* username, Client* receiver){
       write_client(receiver->sock, bio);
    }
    else{
-      write_client(receiver->sock, "Ce joueur n'existe pas");
+      write_client(receiver->sock, "This player doesn't exist.");
    }
 }
 
