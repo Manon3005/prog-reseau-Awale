@@ -341,32 +341,10 @@ static void app(void)
                   } else if (client->state == IN_CHALLENGE_TO) {
                      Client* client_sender = get_sender_from_receiver(requests, actualRequest, client);
                      if (strcmp("Y", buffer) == 0) {
-                        write_client(client->sock, "Starting of the game.\n");
-                        write_client(client_sender->sock, "Request accepted. Starting of the game.\n");
-
-                        int request_to_remove = get_request_index(requests, actualRequest, client_sender);
-                        remove_request(requests, request_to_remove, (&actualRequest));
-
-                        Game new_game;
-                        int current_player = initGame(&new_game, client_sender->name, client->name);
-                        games[actualGame] = new_game;
-                        client->current_game = (&games[actualGame]);
-                        client_sender->current_game = (&games[actualGame]);
-                        actualGame++;
-
-                        if (current_player == 0) {
-                           print_game(&new_game, client_sender, 1);
-                           write_client(client_sender->sock, "Which house do you choose ?\n");
-                           write_client(client->sock, "The other play starts. Wait for him to choose a house.\n");
-                           client->state = IN_GAME_WAITING;
-                           client_sender->state = IN_GAME_CURRENT_PLAYER;
-                        } else {
-                           print_game(&new_game, client, 1);
-                           write_client(client->sock, "Which house do you choose ?\n");
-                           write_client(client_sender->sock, "The other player starts. Wait for him to choose a house.\n");
-                           client->state = IN_GAME_CURRENT_PLAYER;
-                           client_sender->state = IN_GAME_WAITING;
-                        }
+                        client->state = IN_GAME_CONFIG_WAIT;
+                        client_sender->state = IN_GAME_CONFIG;
+                        write_client(client->sock, "Wait for your opponent to configure the game.\n");
+                        write_client(client_sender->sock, "Do you want to make your game private (Y) or not (N) ?\n");
                      } else if (strcmp("N", buffer) == 0) {
                         client->state = IN_MENU;
                         client_sender->state = IN_MENU;
@@ -379,6 +357,47 @@ static void app(void)
                      } else {
                         write_client(client->sock, "Wrong answer. Enter \"Y\" or \"N\" please.\n");
                      }
+                  } else if (client->state == IN_GAME_CONFIG) {
+                     int private = -1;
+                     if (strcmp(buffer, "Y") == 0) {
+                        private = 1;
+                     } else if (strcmp(buffer, "N") == 0) {
+                        private = 0;
+                     }
+                     if (private > -1) {
+                        Client* client_receiver = get_receiver_from_sender(requests, actualRequest, client);
+                        write_client(client->sock, "Starting of the game.\n");
+                        write_client(client_receiver->sock, "Request accepted. Starting of the game.\n");
+
+                        int request_to_remove = get_request_index(requests, actualRequest, client);
+                        remove_request(requests, request_to_remove, (&actualRequest));
+
+                        Game new_game;
+                        int current_player = initGame(&new_game, client->name, client_receiver->name);
+                        new_game.is_private = private;
+                        games[actualGame] = new_game;
+                        client->current_game = (&games[actualGame]);
+                        client_receiver->current_game = (&games[actualGame]);
+                        actualGame++;
+
+                        if (current_player == 0) {
+                           print_game(&new_game, client, 1);
+                           write_client(client->sock, "Which house do you choose ?\n");
+                           write_client(client_receiver->sock, "The other play starts. Wait for him to choose a house.\n");
+                           client_receiver->state = IN_GAME_WAITING;
+                           client->state = IN_GAME_CURRENT_PLAYER;
+                        } else {
+                           print_game(&new_game, client_receiver, 1);
+                           write_client(client_receiver->sock, "Which house do you choose ?\n");
+                           write_client(client->sock, "The other player starts. Wait for him to choose a house.\n");
+                           client_receiver->state = IN_GAME_CURRENT_PLAYER;
+                           client->state = IN_GAME_WAITING;
+                        }
+                     } else {
+                        write_client(client->sock, "Wrong answer. Enter \"Y\" or \"N\" please.\n");
+                     }
+                  } else if (client->state == IN_GAME_CONFIG_WAIT) {
+                     write_client(client->sock, "Wait for your opponent to configure the game.\n");
                   } else if (client->state == IN_GAME_CURRENT_PLAYER) {
                      Game* game = client->current_game;
                      Client* otherPlayerClient = get_client_from_username(clients, actual, game->player[(((game->currentPlayer)+1)%2)]);
@@ -502,13 +521,17 @@ static void app(void)
                         Client* requested_client = is_client_connected(clients, actual, buffer);
                         if (requested_client) {
                            if (requested_client->state == IN_GAME_CURRENT_PLAYER || requested_client->state == IN_GAME_WAITING) {
-                              if (add_observer(requested_client->current_game, client->name)) {
+                              if (!requested_client->current_game->is_private) {
+                                 if (add_observer(requested_client->current_game, client->name)) {
                                  client->state = IN_OBSERVE;
                                  client->current_game = requested_client->current_game;
                                  write_client(client->sock, "Now, you observe the game.\n");
                                  write_client(client->sock, "Enter \"MENU\" to get back to the menu.\n");
+                                 } else {
+                                    write_client(client->sock, "You can't observe this game, too many players are already watching it.\n");
+                                 }
                               } else {
-                                 write_client(client->sock, "You can't observe this game, too many players are already watching it.\n");
+                                 write_client(client->sock, "You can't observe this game, it's a private game.\n");
                               }
                            } else {
                               write_client(client->sock, "This player isn't playing any game.\n");
