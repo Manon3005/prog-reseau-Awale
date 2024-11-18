@@ -203,12 +203,12 @@ static void app(void)
                               if((strcmp(games[i].player[games[i].currentPlayer], client->name) == 0 )){
                                  client->state = IN_GAME_CURRENT_PLAYER;
                                  write_client(client->sock, "This is your turn (after reconnection) \n");
-                                 print_game(&games[i], client);
+                                 print_game(&games[i], client, 1);
                               }
                               else{
                                  client->state = IN_GAME_WAITING;
                                  write_client(client->sock, "Wait for your opponent to play (after reconnection) \n");
-                                 print_game(&games[i], client);
+                                 print_game(&games[i], client, 0);
                               }
                               Client* otherPlayerClient = get_client_from_username(clients, actual, games[i].player[games[i].currentPlayer]);
                               strncpy(buffer, client->name, BUF_SIZE - 1);
@@ -292,13 +292,13 @@ static void app(void)
                         actualGame++;
 
                         if (current_player == 0) {
-                           print_game(&new_game, client_sender);
+                           print_game(&new_game, client_sender, 1);
                            write_client(client_sender->sock, "Which house do you choose ?\n");
                            write_client(client->sock, "The other play starts. Wait for him to choose a house.\n");
                            client->state = IN_GAME_WAITING;
                            client_sender->state = IN_GAME_CURRENT_PLAYER;
                         } else {
-                           print_game(&new_game, client);
+                           print_game(&new_game, client, 1);
                            write_client(client->sock, "Which house do you choose ?\n");
                            write_client(client_sender->sock, "The other player starts. Wait for him to choose a house.\n");
                            client->state = IN_GAME_CURRENT_PLAYER;
@@ -369,15 +369,15 @@ static void app(void)
                            game->currentPlayer = (game->currentPlayer + 1) % 2;
                            int is_game_over = isGameOver(game);
                            write_client(otherPlayerClient->sock, "Your opponent just played, here is the result:\n");
-                           print_game(game, otherPlayerClient);
+                           print_game(game, otherPlayerClient, 1);
                            write_client(client->sock, "Thanks for your choice. Here is the result:\n");
-                           print_game(game, client);
+                           print_game(game, client, 0);
                            for (int i = 0 ; i < game->nb_observer ; i++) {
                               Client* observer_client = is_client_connected(clients, actual, game->observer[i]);
                               if (observer_client) {
                                  write_client(observer_client->sock, client->name);
                                  write_client(observer_client->sock, " just played, here is the result:\n");
-                                 print_game(game, observer_client);
+                                 print_game(game, observer_client, 0);
                               } else {
                                  remove_observer(game, observer_client->name);
                               }
@@ -554,13 +554,13 @@ static Client* get_sender_from_receiver(Request* requests, int actual, Client* r
    return NULL;
 }
 
-static void print_game(Game* game, Client* client) 
+static void print_game(Game* game, Client* client, int in_choice) 
 {
    char str[10];
    char message[BUF_SIZE];
    message[0] = 0;
    write_client(client->sock, "--------------------------------------\n");
-   print_board(game, client);
+   print_board(game, client, in_choice);
    strcat(message, "Score ");
    strcat(message, game->player[0]);
    strcat(message, ": ");
@@ -577,7 +577,7 @@ static void print_game(Game* game, Client* client)
    write_client(client->sock, message);
 }
 
-static void print_board(Game* game, Client* client)
+static void print_board(Game* game, Client* client, int in_choice)
 {
    char message[BUF_SIZE];
    message[0] = 0;
@@ -588,7 +588,7 @@ static void print_board(Game* game, Client* client)
       strcat(message, str);
       strcat(message, "] ");
    }
-   if (game->currentPlayer == 0) {
+   if (in_choice && game->currentPlayer == 0) {
       strcat(message, "  <- your side");
    }
    strcat(message, "\n");
@@ -598,7 +598,7 @@ static void print_board(Game* game, Client* client)
       strcat(message, str);
       strcat(message, "] ");
    }
-   if (game->currentPlayer == 1) {
+   if (in_choice && game->currentPlayer == 1) {
       strcat(message, "  <- your side");
    }
    strcat(message, "\n");
