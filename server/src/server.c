@@ -147,8 +147,6 @@ static void app(void)
                if(c == 0)
                {
                   closesocket(clients[i].sock);
-                  
-                  printf("test 1\n");
                   for(int i = 0; i < actualRequest; i++){
                      if(strcmp(requests[i].sender->name, client->name) == 0){
                         write_client(requests[i].receiver->sock, "The request was cancelled because the person who challenged you disconnected");
@@ -168,24 +166,60 @@ static void app(void)
                         games[i].paused = 1;
                         if(strcmp(games[i].player[0],client->name) == 0){
                            Client* otherPlayerClient = get_client_from_username(clients, actual, games[i].player[1]);
-                           write_client(otherPlayerClient->sock, "Your opponent disconnected. Please wait for him to reconnect.");
+                           if(otherPlayerClient){
+                              write_client(otherPlayerClient->sock, "Your opponent disconnected. Please wait for them to reconnect.");
+                           }
                         }
                         else{
                            Client* otherPlayerClient = get_client_from_username(clients, actual, games[i].player[0]);
-                           write_client(otherPlayerClient->sock, "Your opponent disconnected. Please wait for him to reconnect.");
+                           if(otherPlayerClient){
+                              write_client(otherPlayerClient->sock, "Your opponent disconnected. Please wait for them to reconnect.");
+                           }
                         }
                      }
                   }
-                  remove_client(clients, i, &actual);
-                  strncpy(buffer, client->name, BUF_SIZE - 1);
-                  strncat(buffer, " disconnected !", BUF_SIZE - strlen(buffer) - 1);
-                  send_message_to_all_clients(clients, (*client), actual, buffer, 1);
+               remove_client(clients, i, &actual);
+               //strncpy(buffer, client->name, BUF_SIZE - 1);
+               //strncat(buffer, " disconnected !", BUF_SIZE - strlen(buffer) - 1);
+               //send_message_to_all_clients(clients, (*client), actual, buffer, 1);
                }
                else
                {
                   printf("Buffer : %s\n", buffer);
                   printf("Client state : %d\n", client->state);
-                  if (client->state == IN_REGISTER) {
+
+                  char d[] = " ";
+                  char *p = strtok(buffer, d);
+                  char *target;
+                  char message[BUF_SIZE];
+                  message[0] = 0;
+                  if(strcmp(p,"/chat") == 0){
+                     target = strtok(NULL, d);
+                     Client * client_target;
+                     if(target){
+                        client_target = is_client_connected(clients, actual, target);
+                     }
+                     if(client_target){
+                        if (strcmp(client_target->name, client->name) == 0){
+                           write_client(client_target->sock, "You can't send a message to yourself");
+                        }
+                        else{
+                           strcat(message, "[");
+                           strcat(message, client->name);
+                           strcat(message, "] ");
+                           char * word = strtok(NULL, d);
+                           while(word != NULL){
+                              strcat(message, word);
+                              strcat(message, " ");
+                              word = strtok(NULL, d);
+                           }
+                           write_client(client_target->sock, message);
+                        }
+                     }
+                     else {
+                        write_client(client->sock, "This player is not connected");
+                     }
+                  } else if (client->state == IN_REGISTER) {
                      printf("Password: %s\n", buffer);
                      client->state = IN_MENU;
                      addClientCsv(csvManager, client->name, buffer);
@@ -200,7 +234,17 @@ static void app(void)
                            if(strcmp(games[i].player[0], client->name) == 0 || strcmp(games[i].player[1], client->name) == 0 ){
                               wasInGame = 1;
                               client->current_game = &games[i];
-                              games[i].paused = 0;
+                              Client* other_player;
+                              if(strcmp(games->player[0], client->name) == 0){
+                                 other_player = games->player[1];
+                              }
+                              else{
+                                 other_player = games->player[0];
+                              }
+                              Client* other_player_connected = is_client_connected(clients, actual, other_player);
+                              if(other_player_connected){
+                                 client->current_game->paused = 0;
+                              }
                               write_client(client->sock, "Reconnecting to the game..." );
                               if((strcmp(games[i].player[games[i].currentPlayer], client->name) == 0 )){
                                  client->state = IN_GAME_CURRENT_PLAYER;
@@ -212,15 +256,16 @@ static void app(void)
                                  write_client(client->sock, "Wait for your opponent to play (after reconnection) \n");
                                  print_game(&games[i], client);
                               }
-                              Client* otherPlayerClient = get_client_from_username(clients, actual, games[i].player[games[i].currentPlayer]);
-                              strncpy(buffer, client->name, BUF_SIZE - 1);
-                              strncat(buffer, " reconnected !", BUF_SIZE - strlen(buffer) - 1);
-                              write_client(otherPlayerClient->sock, buffer);
+                              if(other_player_connected){
+                                 strncpy(buffer, client->name, BUF_SIZE - 1);
+                                 strncat(buffer, " reconnected !", BUF_SIZE - strlen(buffer) - 1);
+                                 write_client(other_player_connected->sock, buffer);
+                              }
                            }
                         }
                         if(!wasInGame){
                            client->state = IN_MENU;
-                           write_client(client->sock, "You can enter \"menu\" to display the menu.");
+                           write_client(client->sock, "You can enter \"MENU\" to display the menu.");
                            print_menu(client);
                         }
                         
@@ -228,7 +273,7 @@ static void app(void)
                         write_client(client->sock, "Wrong password, enter your password again:");
                      }
                   } else if (client->state == IN_MENU) {
-                     if (strcmp("menu", buffer) == 0){
+                     if (strcmp("MENU", buffer) == 0){
                         print_menu(client);
                      } else if (strcmp("1", buffer) == 0){
                         print_online_players(clients, client, actual);
