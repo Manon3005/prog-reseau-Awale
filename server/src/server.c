@@ -149,13 +149,13 @@ static void app(void)
                   closesocket(clients[i].sock);
                   for(int i = 0; i < actualRequest; i++){
                      if(strcmp(requests[i].sender->name, client->name) == 0){
-                        write_client(requests[i].receiver->sock, "The request was cancelled because the person who challenged you disconnected");
+                        write_client(requests[i].receiver->sock, "The request was cancelled because the person who challenged you disconnected.");
                         requests[i].receiver->state = IN_MENU;
                         int request_to_remove = get_request_index(requests, actualRequest, client);
                         remove_request(requests, request_to_remove, (&actualRequest));
                      }
                      if(strcmp(requests[i].receiver->name, client->name) == 0){
-                        write_client(requests[i].sender->sock, "The request was cancelled because the person you challenged disconnected");
+                        write_client(requests[i].sender->sock, "The request was cancelled because the person you challenged disconnected.");
                         requests[i].sender->state = IN_MENU;
                         int request_to_remove = get_request_index(requests, actualRequest, get_sender_from_receiver(requests, actualRequest, client));
                         remove_request(requests, request_to_remove, (&actualRequest));
@@ -291,6 +291,26 @@ static void app(void)
                      } else if (strcmp("6", buffer) == 0) {
                         client->state = IN_OBSERVE_REQUEST;
                         write_client(client->sock, "Enter the name of the player you want to watch:");
+                     } else if (strcmp("7", buffer) == 0) {
+                        int friend_count = 0;
+                        char** client_friends = getFriendsAsArrayFromCsv(csvManager, client->name, &friend_count);
+                        if (client_friends) {
+                           write_client(client->sock, "Here is the list of your friends:");
+                           for (int i = 0; i < friend_count; i++) {
+                                 write_client(client->sock, "\n- ");
+                                 write_client(client->sock, client_friends[i]);
+                                 free(client_friends[i]);
+                           }
+                           free(client_friends);
+                        } else {
+                           write_client(client->sock, "You don't have any friend.\n");
+                        }
+                     } else if (strcmp("8", buffer) == 0) {
+                        client->state = IN_ADD_FRIEND;
+                        write_client(client->sock, "Enter the name of the player you want to add as a friend:");
+                     } else if (strcmp("9", buffer) == 0) {
+                        client->state = IN_REMOVE_FRIEND;
+                        write_client(client->sock, "Enter the name of the player you want to remove as a friend:");
                      } else {
                         write_client(client->sock, "The selected option doesn't exit. Here is the menu:\n");
                         print_menu(client);
@@ -551,6 +571,32 @@ static void app(void)
                         remove_observer(client->current_game, client->name);
                         client->current_game = NULL;
                      }
+                  } else if (client->state == IN_ADD_FRIEND) {
+                     if (strcmp(buffer, client->name) != 0) {
+                        if (playerExistsInCsv(csvManager, buffer)) {
+                           if (!areFriendsInCsv(csvManager, client->name, buffer)) {
+                              addFriendToCsv(csvManager, client->name, buffer);
+                              write_client(client->sock, "Friend added.\n");
+                           } else {
+                              write_client(client->sock, "You are already friend with this player.\n");
+                           }
+                        } else {
+                           write_client(client->sock, "This player doesn't exist.\n");
+                        }
+                     } else {
+                        write_client(client->sock, "Unfortunately, you can't add yourself as a friend.\n");
+                     }
+                     write_client(client->sock, "You're back in the menu\n");
+                     client->state = IN_MENU;
+                  } else if (client->state == IN_REMOVE_FRIEND) {
+                     if (areFriendsInCsv(csvManager, client->name, buffer)) {
+                        removeFriendFromCsv(csvManager, client->name, buffer);
+                        write_client(client->sock, "Friend removed.\n");
+                     } else {
+                        write_client(client->sock, "You aren't friend with this player.\n");
+                     }
+                     write_client(client->sock, "You're back in the menu\n");
+                     client->state = IN_MENU;
                   }
                }
                break;
@@ -733,12 +779,17 @@ static void print_menu(Client *client) {
    write_client(client->sock, "[4] Read a player's bio\n");
    write_client(client->sock, "[5] See your games' archives\n");
    write_client(client->sock, "[6] Observe a game\n");
+   write_client(client->sock, "[7] See your friends' list\n");
+   write_client(client->sock, "[8] Add a friend\n");
+   write_client(client->sock, "[9] Remove a friend\n");
    write_client(client->sock, "Option selected:");
 }
 
 void print_bio(csvManager* csvManager, char* username, Client* receiver){
    char * bio = getBioFromCsv(csvManager, username);
-   if(bio){
+   strcpy(bio, bio + 1);
+   bio[strlen(bio) - 1] = '\0';
+   if (bio){
       write_client(receiver->sock, bio);
    }
    else{
