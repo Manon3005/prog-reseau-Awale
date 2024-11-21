@@ -274,6 +274,7 @@ static void app(void)
                         print_menu(client);
                      } else if (strcmp("1", buffer) == 0){
                         print_online_players(clients, client, actual);
+                        write_client(client->sock, "You're back in the menu'.\n");
                      } else if (strcmp("2", buffer) == 0){
                         client->state = IN_CHALLENGE_FROM;
                         write_client(client->sock, "Enter the name of the player you want to challenge:");
@@ -311,8 +312,11 @@ static void app(void)
                      } else if (strcmp("9", buffer) == 0) {
                         client->state = IN_REMOVE_FRIEND;
                         write_client(client->sock, "Enter the name of the player you want to remove as a friend:");
+                     } else if (strcmp("10", buffer) == 0) {
+                        print_current_games(games, actualGame, client);
+                        write_client(client->sock, "You're back in the menu.\n");
                      } else {
-                        write_client(client->sock, "The selected option doesn't exit. Here is the menu:\n");
+                        write_client(client->sock, "Wrong option selected. Please, choose a number between 1 and 10.\n");
                         print_menu(client);
                      }
                   } else if (client->state == IN_CHALLENGE_FROM) {
@@ -454,6 +458,8 @@ static void app(void)
                            strcpy(game->moves, &newMoves);
                            print_game_end(game, 2, client);
                            print_game_end(game, 2, otherPlayerClient);
+                           write_client(client->sock, "Do you want to save the game ? (Y/N)\n");
+                           write_client(otherPlayerClient->sock, "Do you want to save the game ? (Y/N)\n");
                            for (int i = 0 ; i < game->nb_observer ; i++) {
                               Client* observer_client = is_client_connected(clients, actual, game->observer[i]);
                               if (observer_client) {
@@ -506,6 +512,8 @@ static void app(void)
                               client->state = IN_SAVING_GAME;
                               print_game_end(game, is_game_over, client);
                               print_game_end(game, is_game_over, otherPlayerClient);
+                              write_client(client->sock, "Do you want to save the game ? (Y/N)\n");
+                              write_client(otherPlayerClient->sock, "Do you want to save the game ? (Y/N)\n");
                               for (int i = 0 ; i < game->nb_observer ; i++) {
                                  Client* observer_client = is_client_connected(clients, actual, game->observer[i]);
                                  if (observer_client) {
@@ -634,6 +642,24 @@ static void app(void)
    }
 }
 
+void print_current_games(Game* games, int actualGame, Client* client) {
+   if (actualGame > 0) {
+      char message[BUF_SIZE];
+      message[0] = 0;
+      strcat(message, "Current games:\n");
+      for (int i = 0 ; i < actualGame ; i++) {
+         strcat(message, "- ");
+         strcat(message, games[i].player[0]);
+         strcat(message, " vs ");
+         strcat(message, games[i].player[1]);
+         strcat(message, "\n");
+      }
+      write_client(client->sock, message);
+   } else {
+      write_client(client->sock, "No current games.\n");
+   }
+}
+
 void print_player_archives(Client* client){
    SavedGame* games = NULL;
    int gameCount = 0;
@@ -689,7 +715,6 @@ static void print_game_end(Game* game, int status, Client* client_to_send) {
       strcat(message, " points.\n");
       write_client(client_to_send->sock, message);
    }
-   write_client(client_to_send->sock, "Do you want to save the game ? (Y/N)");
 }
 
 static Client* get_client_from_username(Client* clients, int actual, char* username) {
@@ -806,6 +831,7 @@ static void print_menu(Client *client) {
    write_client(client->sock, "[7] See your friends' list\n");
    write_client(client->sock, "[8] Add a friend\n");
    write_client(client->sock, "[9] Remove a friend\n");
+   write_client(client->sock, "[10] Current games list\n");
    write_client(client->sock, "Option selected:");
 }
 
