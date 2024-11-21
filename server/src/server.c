@@ -452,7 +452,19 @@ static void app(void)
                            strcat(newMoves, buffer);
                            strcat(newMoves, " ");
                            strcpy(game->moves, &newMoves);
-                           print_game_end(game, 2, client, otherPlayerClient);
+                           print_game_end(game, 2, client);
+                           print_game_end(game, 2, otherPlayerClient);
+                           for (int i = 0 ; i < game->nb_observer ; i++) {
+                              Client* observer_client = is_client_connected(clients, actual, game->observer[i]);
+                              if (observer_client) {
+                                 print_game_end(game, 2, observer_client);
+                                 write_client(observer_client->sock, "The game is over. You're now back in the menu.\n");
+                                 print_menu(observer_client);
+                                 observer_client->state = IN_MENU;
+                              } else {
+                                 remove_observer(game, observer_client->name);
+                              }
+                           }
                         }
                         else {
                            write_client(client->sock, "Incorrect choice. Please choose a number between 1 and 6 or abandon.\n");
@@ -492,7 +504,19 @@ static void app(void)
                            } else {
                               otherPlayerClient->state = IN_SAVING_GAME;
                               client->state = IN_SAVING_GAME;
-                              print_game_end(game, is_game_over, client, otherPlayerClient);
+                              print_game_end(game, is_game_over, client);
+                              print_game_end(game, is_game_over, otherPlayerClient);
+                              for (int i = 0 ; i < game->nb_observer ; i++) {
+                                 Client* observer_client = is_client_connected(clients, actual, game->observer[i]);
+                                 if (observer_client) {
+                                    print_game_end(game, is_game_over, observer_client);
+                                    write_client(observer_client->sock, "The game is over. You're now back in the menu.\n");
+                                    print_menu(observer_client);
+                                    observer_client->state = IN_MENU;
+                                 } else {
+                                    remove_observer(game, observer_client->name);
+                                 }
+                              }
                            }
                         }
                      }
@@ -541,7 +565,7 @@ static void app(void)
                         Client* requested_client = is_client_connected(clients, actual, buffer);
                         if (requested_client) {
                            if (requested_client->state == IN_GAME_CURRENT_PLAYER || requested_client->state == IN_GAME_WAITING) {
-                              if (!requested_client->current_game->is_private) {
+                              if (!requested_client->current_game->is_private || areFriendsInCsv(csvManager, requested_client->name, client->name)) {
                                  if (add_observer(requested_client->current_game, client->name)) {
                                  client->state = IN_OBSERVE;
                                  client->current_game = requested_client->current_game;
@@ -549,9 +573,13 @@ static void app(void)
                                  write_client(client->sock, "Enter \"MENU\" to get back to the menu.\n");
                                  } else {
                                     write_client(client->sock, "You can't observe this game, too many players are already watching it.\n");
+                                    client->state = IN_MENU;
+                                    print_menu(client);
                                  }
                               } else {
-                                 write_client(client->sock, "You can't observe this game, it's a private game.\n");
+                                 write_client(client->sock, "You can't observe this game, it's a private game and you aren't a friend of this player.\n");
+                                 client->state = IN_MENU;
+                                 print_menu(client); 
                               }
                            } else {
                               write_client(client->sock, "This player isn't playing any game.\n");
@@ -637,19 +665,17 @@ void print_player_archives(Client* client){
    }
 }
 
-static void print_game_end(Game* game, int status, Client* player_0, Client* player_1) {
+static void print_game_end(Game* game, int status, Client* client_to_send) {
    if (status == 1) {
-      write_client(player_0->sock, "Draw ! There is egality between the two players.\n");
-      write_client(player_1->sock, "Draw ! There is egality between the two players.\n");
+      write_client(client_to_send->sock, "Draw ! There is egality between the two players.\n");
    } else if (status == 2){
       char message[BUF_SIZE];
       char str[10];
       message[0] = 0;
       strcat(message, "Congratulations to ");
       strcat(message, game->player[game->winner]);
-      strcat(message, " who wins the game by abandon of their opponent"); 
-      write_client(player_0->sock, message);
-      write_client(player_1->sock, message);
+      strcat(message, " who wins the game by abandon of their opponent.\n"); 
+      write_client(client_to_send->sock, message);
    }
    else {
       char message[BUF_SIZE];
@@ -661,11 +687,9 @@ static void print_game_end(Game* game, int status, Client* player_0, Client* pla
       sprintf(str, "%d", game->score[game->winner]);
       strcat(message, str);
       strcat(message, " points.\n");
-      write_client(player_0->sock, message);
-      write_client(player_1->sock, message);
+      write_client(client_to_send->sock, message);
    }
-   write_client(player_0->sock, "Do you want to save the game ? (Y/N)");
-   write_client(player_1->sock, "Do you want to save the game ? (Y/N)");
+   write_client(client_to_send->sock, "Do you want to save the game ? (Y/N)");
 }
 
 static Client* get_client_from_username(Client* clients, int actual, char* username) {
@@ -918,7 +942,7 @@ static void write_client(SOCKET sock, const char *buffer)
    }
 }
 
-int main(int argc, char **argv)
+int main()
 {
    init();
 
