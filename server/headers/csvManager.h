@@ -5,8 +5,8 @@ typedef struct csvManager {
 typedef struct {
     char player1[256];
     char player2[256];
-    char moves[1024];
     char date[20];
+    char winner[256];
 } SavedGame;
 
 int isCLientInCsv(csvManager* csvManager, char* username);

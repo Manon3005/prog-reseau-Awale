@@ -152,14 +152,14 @@ char* getBioFromCsv(csvManager* csvManager, char* username) {
 }
 
 
-int addGameToCsv(csvManager* csvManager, const char* player1, const char* player2, const char* moves, const char* date) {
+int addGameToCsv(csvManager* csvManager, const char* player1, const char* player2, const char* date, const char* winner) {
     FILE *file = fopen("data/games.csv", "a");
     if (file == NULL) {
         printf("Impossible d'ouvrir le fichier\n");
         return 0;
     }
 
-    fprintf(file, "%s,%s,%s,%s\n", player1, player2, moves, date);
+    fprintf(file, "%s,%s,%s,%s\n", player1, player2, date, winner);
     fclose(file);
     return 1;
 }
@@ -170,37 +170,6 @@ void getCurrentDateTime(char* dateBuffer, size_t size) {
     snprintf(dateBuffer, size, "%04d-%02d-%02d %02d:%02d", 
              tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, 
              tm.tm_hour, tm.tm_min);
-}
-
-int getMovesFromPlayersAndDate(csvManager* csvManager, const char* player1, const char* player2, const char* date, char* moves) {
-    FILE *file = fopen("data/games.csv", "r");
-    if (file == NULL) {
-        printf("Impossible d'ouvrir le fichier\n");
-        return 0;
-    }
-
-    char line[1024];
-    while (fgets(line, sizeof(line), file)) {
-        line[strcspn(line, "\r\n")] = 0; 
-
-        char *file_player1 = strtok(line, ",");
-        char *file_player2 = strtok(NULL, ",");
-        char *file_moves = strtok(NULL, ",");
-        char *file_date = strtok(NULL, ",");
-
-        if (file_player1 && file_player2 && file_date && 
-            strcmp(file_player1, player1) == 0 && 
-            strcmp(file_player2, player2) == 0 && 
-            strcmp(file_date, date) == 0) {
-            // Partie trouvée, copie les coups
-            strncpy(moves, file_moves, 1024);
-            fclose(file);
-            return 1;
-        }
-    }
-
-    fclose(file);
-    return 0; // Partie non trouvée
 }
 
 int getGamesByPlayer(const char* username, SavedGame** games, int* gameCount) {
@@ -219,10 +188,10 @@ int getGamesByPlayer(const char* username, SavedGame** games, int* gameCount) {
 
         char* file_player1 = strtok(line, ",");
         char* file_player2 = strtok(NULL, ",");
-        char* file_moves = strtok(NULL, ",");
         char* file_date = strtok(NULL, ",");
+        char* file_winner = strtok(NULL, ",");
 
-        if (!file_player1 || !file_player2 || !file_moves || !file_date) {
+        if (!file_player1 || !file_player2 || !file_date || !file_winner) {
             continue; 
         }
 
@@ -237,8 +206,8 @@ int getGamesByPlayer(const char* username, SavedGame** games, int* gameCount) {
             // Copie des infos dans la struc SavedGame
             strncpy((*games)[*gameCount].player1, file_player1, 256);
             strncpy((*games)[*gameCount].player2, file_player2, 256);
-            strncpy((*games)[*gameCount].moves, file_moves, 1024);
             strncpy((*games)[*gameCount].date, file_date, 20);
+            strncpy((*games)[*gameCount].winner, file_winner, 256);
 
             (*gameCount)++;
         }
