@@ -15,7 +15,7 @@ typedef struct Game
     char moves[1024];
     char observer[10][1024];
     int nb_observer;
-    int first_player;
+    int is_private;
     int quitting_allowed;
 } Game;
 

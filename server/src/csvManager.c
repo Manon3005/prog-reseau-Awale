@@ -60,7 +60,7 @@ int addClientCsv(csvManager* csvManager, char* username, char* pwd) {
         return 0;
     }
 
-    fprintf(file, "%s,%s,\n", username, pwd); 
+    fprintf(file, "%s,%s,{},\n", username, pwd); 
     fclose(file);
     return 1;
 }
@@ -88,17 +88,34 @@ int changeBioCsv(csvManager* csvManager, char* username, char* bio) {
         char *file_username = strtok(line, ",");
         char *file_pwd = strtok(NULL, ",");
         char *file_bio = strtok(NULL, ",");
+        char *file_friends = strtok(NULL, ",");
 
         if (file_username && strcmp(file_username, username) == 0) {
-            // Mettre à jour la bio pour cet utilisateur
-            fprintf(temp, "%s,%s,%s\n", file_username, file_pwd ? file_pwd : "", bio);
+            size_t len= strlen(bio);
+            char* result = malloc(len + 3); 
+            if (!result) {
+                printf("Erreur d'allocation mémoire\n");
+                return NULL;
+            }
+            result[0] = '{';                    
+            strcpy(result + 1, bio);      
+            result[len + 1] = '}';      
+            result[len + 2] = '\0'; 
+            strcpy(bio, result);
+            free(result);
+            fprintf(temp, "%s,%s,%s,%s\n",
+                file_username, 
+                file_pwd ? file_pwd : "", 
+                bio, 
+                file_friends ? file_friends : "");
             user_found = 1;
         } else {
             // Copier la ligne inchangée
-            fprintf(temp, "%s,%s,%s\n", 
+            fprintf(temp, "%s,%s,%s,%s\n", 
                 file_username ? file_username : "", 
                 file_pwd ? file_pwd : "", 
-                file_bio ? file_bio : "");
+                file_bio ? file_bio : "", 
+                file_friends ? file_friends : "");
         }
     }
 
@@ -129,11 +146,12 @@ char* getBioFromCsv(csvManager* csvManager, char* username) {
     char line[1024];
 
     while (fgets(line, sizeof(line), file)) {
-        line[strcspn(line, "\r\n")] = 0;
+        line[strcspn(line, "\r\n")] = 0; // Nettoyage des fins de ligne
 
         char *file_username = strtok(line, ",");
         char *file_pwd = strtok(NULL, ",");
         char *file_bio = strtok(NULL, ",");
+        char *file_friends = strtok(NULL, ",");
 
         if (file_username && strcmp(file_username, username) == 0) {
             if (file_bio) {
@@ -150,7 +168,6 @@ char* getBioFromCsv(csvManager* csvManager, char* username) {
     fclose(file);
     return NULL; // Utilisateur non trouvé
 }
-
 
 int addGameToCsv(csvManager* csvManager, const char* player1, const char* player2, const char* date, const char* winner) {
     FILE *file = fopen("data/games.csv", "a");
@@ -215,4 +232,249 @@ int getGamesByPlayer(const char* username, SavedGame** games, int* gameCount) {
 
     fclose(file);
     return 1; // Succès
+}
+
+int addFriendToCsv(csvManager* csvManager, char* username, char* friend_username) {
+    FILE *file = fopen("data/clients.csv", "r");
+    if (file == NULL) {
+        printf("Impossible d'ouvrir le fichier\n");
+        return 0;
+    }
+
+    FILE *temp = fopen("data/clients_temp.csv", "w");
+    if (temp == NULL) {
+        printf("Impossible de créer un fichier temporaire\n");
+        fclose(file);
+        return 0;
+    }
+
+    char line[1024];
+    int user_found = 0;
+
+    while (fgets(line, sizeof(line), file)) {
+        line[strcspn(line, "\r\n")] = 0; // Nettoyage des fins de ligne
+
+        char *file_username = strtok(line, ",");
+        char *file_pwd = strtok(NULL, ",");
+        char *file_bio = strtok(NULL, ",");
+        char *file_friends = strtok(NULL, ",");
+
+        if (file_username && strcmp(file_username, username) == 0) {
+            // Vérifie si l'ami est déjà présent
+            if (file_friends && strstr(file_friends, friend_username) == NULL) {
+                // Ajoute l'ami
+                strcat(file_friends, " ");
+                strcat(file_friends, friend_username);
+            } else if (!file_friends) {
+                file_friends = friend_username; // Si aucun ami, initialise la liste
+            }
+            fprintf(temp, "%s,%s,%s,%s\n", 
+                file_username, 
+                file_pwd ? file_pwd : "", 
+                file_bio ? file_bio : "", 
+                file_friends ? file_friends : "");
+            user_found = 1;
+        } else {
+            // Copie la ligne inchangée
+            fprintf(temp, "%s,%s,%s,%s\n",
+                file_username ? file_username : "",
+                file_pwd ? file_pwd : "",
+                file_bio ? file_bio : "",
+                file_friends ? file_friends : "");
+        }
+    }
+
+    fclose(file);
+    fclose(temp);
+
+    // Remplace le fichier original par le temporaire
+    if (remove("data/clients.csv") != 0) {
+        printf("Erreur lors de la suppression de l'ancien fichier\n");
+        return 0;
+    }
+    if (rename("data/clients_temp.csv", "data/clients.csv") != 0) {
+        printf("Erreur lors du renommage du fichier temporaire\n");
+        return 0;
+    }
+
+    return user_found;
+}
+
+int removeFriendFromCsv(csvManager* csvManager, char* username, char* friend_username) {
+    FILE *file = fopen("data/clients.csv", "r");
+    if (file == NULL) {
+        printf("Impossible d'ouvrir le fichier\n");
+        return 0;
+    }
+
+    FILE *temp = fopen("data/clients_temp.csv", "w");
+    if (temp == NULL) {
+        printf("Impossible de créer un fichier temporaire\n");
+        fclose(file);
+        return 0;
+    }
+
+    char line[1024];
+    int user_found = 0;
+
+    while (fgets(line, sizeof(line), file)) {
+        line[strcspn(line, "\r\n")] = 0; // Nettoyage des fins de ligne
+
+        char *file_username = strtok(line, ",");
+        char *file_pwd = strtok(NULL, ",");
+        char *file_bio = strtok(NULL, ",");
+        char *file_friends = strtok(NULL, ",");
+
+        if (file_username && strcmp(file_username, username) == 0) {
+            // Supprime l'ami si présent
+            char updated_friends[1024] = "";
+            if (file_friends) {
+                char *token = strtok(file_friends, " ");
+                while (token) {
+                    if (strcmp(token, friend_username) != 0) {
+                        if (strlen(updated_friends) > 0) strcat(updated_friends, " ");
+                        strcat(updated_friends, token);
+                    }
+                    token = strtok(NULL, " ");
+                }
+            }
+            fprintf(temp, "%s,%s,%s,%s\n", file_username, file_pwd ? file_pwd : "", file_bio ? file_bio : "", updated_friends);
+            user_found = 1;
+        } else {
+            // Copie la ligne inchangée
+            fprintf(temp, "%s,%s,%s,%s\n",
+                file_username ? file_username : "",
+                file_pwd ? file_pwd : "",
+                file_bio ? file_bio : "",
+                file_friends ? file_friends : "");
+        }
+    }
+
+    fclose(file);
+    fclose(temp);
+
+    // Remplace le fichier original par le temporaire
+    if (remove("data/clients.csv") != 0) {
+        printf("Erreur lors de la suppression de l'ancien fichier\n");
+        return 0;
+    }
+    if (rename("data/clients_temp.csv", "data/clients.csv") != 0) {
+        printf("Erreur lors du renommage du fichier temporaire\n");
+        return 0;
+    }
+
+    return user_found;
+}
+
+int areFriendsInCsv(csvManager* csvManager, char* username, char* friend_username) {
+    FILE *file = fopen("data/clients.csv", "r");
+    if (file == NULL) {
+        printf("Impossible d'ouvrir le fichier\n");
+        return 0;
+    }
+
+    char line[1024];
+
+    while (fgets(line, sizeof(line), file)) {
+        line[strcspn(line, "\r\n")] = 0;
+
+        char *file_username = strtok(line, ",");
+        char *file_pwd = strtok(NULL, ",");
+        char *file_bio = strtok(NULL, ",");
+        char *file_friends = strtok(NULL, ",");
+
+        if (file_username && strcmp(file_username, username) == 0) {
+            fclose(file);
+            return file_friends && strstr(file_friends, friend_username) != NULL;
+        }
+    }
+
+    fclose(file);
+    return 0; // Utilisateur non trouvé ou pas ami
+}
+
+char** getFriendsAsArrayFromCsv(csvManager* csvManager, char* username, int* friend_count) {
+    FILE *file = fopen("data/clients.csv", "r");
+    if (file == NULL) {
+        printf("Impossible d'ouvrir le fichier\n");
+        *friend_count = 0;
+        return NULL;
+    }
+
+    char line[1024];
+    char *friends_line = NULL;
+    *friend_count = 0;
+
+    // Lire chaque ligne pour trouver l'utilisateur
+    while (fgets(line, sizeof(line), file)) {
+        line[strcspn(line, "\r\n")] = 0; // Nettoyer les fins de ligne
+
+        char *file_username = strtok(line, ",");
+        char *file_pwd = strtok(NULL, ",");
+        char *file_bio = strtok(NULL, ",");
+        char *file_friends = strtok(NULL, ",");
+
+        if (file_username && strcmp(file_username, username) == 0) {
+            friends_line = file_friends;
+            break;
+        }
+    }
+
+    fclose(file);
+
+    if (!friends_line || strlen(friends_line) == 0) {
+        return NULL; // Aucun ami trouvé ou ligne vide
+    }
+
+    // Compter le nombre d'amis
+    char *temp = strdup(friends_line);
+    char *token = strtok(temp, " ");
+    while (token) {
+        (*friend_count)++;
+        token = strtok(NULL, " ");
+    }
+    free(temp);
+
+    // Allouer un tableau pour les amis
+    char **friends_array = malloc((*friend_count) * sizeof(char*));
+    if (!friends_array) {
+        printf("Erreur d'allocation mémoire\n");
+        *friend_count = 0;
+        return NULL;
+    }
+
+    // Remplir le tableau avec les noms d'amis
+    int index = 0;
+    token = strtok(friends_line, " ");
+    while (token) {
+        friends_array[index++] = strdup(token); // Allouer et copier chaque ami
+        token = strtok(NULL, " ");
+    }
+
+    return friends_array;
+}
+
+int playerExistsInCsv(csvManager* csvManager, char* username) {
+    FILE *file = fopen("data/clients.csv", "r");
+    if (file == NULL) {
+        printf("Impossible d'ouvrir le fichier\n");
+        return 0; // Erreur d'ouverture, supposons que l'utilisateur n'existe pas
+    }
+
+    char line[1024];
+
+    // Parcourir chaque ligne du fichier
+    while (fgets(line, sizeof(line), file)) {
+        line[strcspn(line, "\r\n")] = 0; // Nettoyer les fins de ligne
+
+        char *file_username = strtok(line, ","); // Lire le champ `username`
+
+        if (file_username && strcmp(file_username, username) == 0) {
+            fclose(file);
+            return 1; // Joueur trouvé
+        }
+    }
+
+    fclose(file);
+    return 0; // Joueur non trouvé
 }

@@ -16,3 +16,8 @@ int changeBioCsv(csvManager* csvManager, char* username, char* bio);
 char* getBioFromCsv(csvManager* csvManager, char* username);
 int addGameToCsv(csvManager* csvManager, const char* player1, const char* player2, const char* moves, const char* date);
 void getCurrentDateTime(char* dateBuffer, size_t size);
+int addFriendToCsv(csvManager* csvManager, char* username, char* friend_username);
+int removeFriendFromCsv(csvManager* csvManager, char* username, char* friend_username);
+int areFriendsInCsv(csvManager* csvManager, char* username, char* friend_username);
+char** getFriendsAsArrayFromCsv(csvManager* csvManager, char* username, int* friend_count);
+int playerExistsInCsv(csvManager* csvManager, char* username);
