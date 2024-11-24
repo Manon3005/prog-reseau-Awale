@@ -25,7 +25,7 @@ Un menu s'affiche et vous avez 10 options que nous allons vous détailler :
 
 5 - '[5] See your games' archives' : Vous permet de voir l'historique de toutes vos parties avec votre adversaire, la date, et la vainqueur.
 
-6 - '[6] Observe a game' : Vous permet d'entrer un nom de joueur pour observer sa partie. Vous pourrez quitter le mode observateur à tout moment. Attention, vous ne pouvez pas observer une partie privée si le joueur ne figure pas dans la liste de vos amis.
+6 - '[6] Observe a game' : Vous permet d'entrer un nom de joueur pour observer sa partie. Vous pourrez quitter le mode observateur à tout moment. Attention, vous ne pouvez pas observer une partie privée si vous ne figurez pas dans la liste d'amis du joueur.
 
 7 - '[7] See your friends' list' : Vous permet d'afficher votre liste d'amis.
 
