@@ -44,7 +44,7 @@ Le jeu se joue à deux joueur uniquement. Le plateau est divisé en 2 fois 6 cas
 Au début de la partie, 48 graines sont réparties équitablement dans les 12 cases, soit 4 graines par case.
 Le jeu se joue chacun son tour. 
 
-A son tour, le joueur choisit une case non vide de son camp et réparti les graines une par une dans le sens des aiguilles d'une montre entre les cases. S'il fait le tour complet, il saute la case d'où proviennent les graines.
+A son tour, le joueur choisit une case non vide de son camp, en rentrant un nombre entre 1 et 6 (1 étant la case la plus à gauche, et 6 la case la plus à droite) et répartit les graines une par une dans le sens des aiguilles d'une montre entre les cases. S'il fait le tour complet, il saute la case d'où proviennent les graines.
 Une fois la répartition terminée, si l'un des camps adverses dans lesquels il a disposé une graine en contient strictement 2 ou 3, il récupère les graines de celui le plus éloigné et remonte vers son camp : il récupère alors les camps qui ont 2 ou 3 graines jusqu'à tomber sur un camp adverse qui ne satisfait pas cette règle.
 
 Les graines gagnées sont mises de côté et rapportent un point par graine.
