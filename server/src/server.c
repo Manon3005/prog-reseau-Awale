@@ -169,14 +169,14 @@ static void app(void)
                            Client* otherPlayerClient = get_client_from_username(clients, actual, games[i].player[1]);
                            if(otherPlayerClient){
                               write_client(otherPlayerClient->sock, "Your opponent disconnected. Please wait for them to reconnect.");
-                              timer_deconnection(5, otherPlayerClient, otherPlayerClient->current_game);
+                              timer_deconnection(5, otherPlayerClient, otherPlayerClient->current_game, clients, actual);
                            }
                         }
                         else{
                            Client* otherPlayerClient = get_client_from_username(clients, actual, games[i].player[0]);
                            if(otherPlayerClient){
                               write_client(otherPlayerClient->sock, "Your opponent disconnected. Please wait for them to reconnect.");
-                              timer_deconnection(5, otherPlayerClient, otherPlayerClient->current_game);
+                              timer_deconnection(5, otherPlayerClient, otherPlayerClient->current_game, clients, actual);
                            }
                         }
                      }
@@ -462,7 +462,19 @@ static void app(void)
                            otherPlayerClient->current_game = NULL;
                            client->state = IN_MENU;
                            otherPlayerClient->state = IN_MENU;
-                           print_game_end(game, 2, client, otherPlayerClient);
+                           print_game_end(game, 2, client);
+                           print_game_end(game, 2, otherPlayerClient);
+                           for (int i = 0 ; i < game->nb_observer ; i++) {
+                              Client* observer_client = is_client_connected(clients, actual, game->observer[i]);
+                              if (observer_client) {
+                                 print_game_end(game, 2, observer_client);
+                                 write_client(observer_client->sock, "The game is over. You're now back in the menu.\n");
+                                 print_menu(observer_client);
+                                 observer_client->state = IN_MENU;
+                              } else {
+                                 remove_observer(game, observer_client->name);
+                              }
+                           }
                            remove_game(games, game, &actualGame);
                         }
                         else {
@@ -508,7 +520,8 @@ static void app(void)
                               otherPlayerClient->current_game = NULL;
                               client->state = IN_MENU;
                               otherPlayerClient->state = IN_MENU;
-                              print_game_end(game, is_game_over, client, otherPlayerClient);
+                              print_game_end(game, is_game_over, client);
+                              print_game_end(game, is_game_over, otherPlayerClient);
                               for (int i = 0 ; i < game->nb_observer ; i++) {
                                  Client* observer_client = is_client_connected(clients, actual, game->observer[i]);
                                  if (observer_client) {
@@ -525,15 +538,44 @@ static void app(void)
                      }
                      else{
                         if(game->quitting_allowed && strcmp(buffer, "QUIT") == 0){
+                           for (int i = 0 ; i < game->nb_observer ; i++) {
+                                 Client* observer_client = is_client_connected(clients, actual, game->observer[i]);
+                                 if (observer_client) {
+                                    write_client(observer_client->sock, "The game is ended due to a long deconnexion\n");
+                                    print_menu(observer_client);
+                                    observer_client->state = IN_MENU;
+                                 } else {
+                                    remove_observer(game, observer_client->name);
+                                 }
+                              }
                            remove_game(games, game, &actualGame, clients, actual);
                            client->state = IN_MENU;
                            print_menu(client);
-                           
                         }
                         write_client(client->sock,"Wait for you opponent to reconnect.");
                      }
                   } else if (client->state == IN_GAME_WAITING) {
-                     write_client(client->sock, "It's not your turn to play. Please, wait for the other player!");
+                     Game* game = client->current_game;
+                     if(!game->paused){
+                        write_client(client->sock, "It's not your turn to play. Please, wait for the other player!");
+                     }
+                     else{
+                        if(game->quitting_allowed && strcmp(buffer, "QUIT") == 0){
+                           for (int i = 0 ; i < game->nb_observer ; i++) {
+                              Client* observer_client = is_client_connected(clients, actual, game->observer[i]);
+                              if (observer_client) {
+                                 write_client(observer_client->sock, "The game is ended due to a long deconnexion\n");
+                                 print_menu(observer_client);
+                                 observer_client->state = IN_MENU;
+                              } else {
+                                 remove_observer(game, observer_client->name);
+                              }
+                           }
+                           remove_game(games, game, &actualGame, clients, actual);
+                           client->state = IN_MENU;
+                           print_menu(client);
+                        }
+                     }
                   } else if (client->state == IN_CHANGING_BIO) {
                      int bioChanged = changeBioCsv(csvManager, client->name, buffer);
                      if (bioChanged){
@@ -550,6 +592,7 @@ static void app(void)
                      }
                      else{
                         print_bio(csvManager,buffer, client);
+                        printf("After print_bio\n");
                         write_client(client->sock, "\nEnter another username to see their bio. Enter 'MENU' to come back to the menu when you are done.");
                      }
                   } else if (client->state == IN_OBSERVE_REQUEST) {
@@ -823,9 +866,10 @@ static void print_menu(Client *client) {
 
 void print_bio(csvManager* csvManager, char* username, Client* receiver){
    char * bio = getBioFromCsv(csvManager, username);
-   strcpy(bio, bio + 1);
-   bio[strlen(bio) - 1] = '\0';
+   printf("Bio founded\n");
    if (bio){
+      strcpy(bio, bio + 1);
+      bio[strlen(bio) - 1] = '\0';
       write_client(receiver->sock, bio);
    }
    else{

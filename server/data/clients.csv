@@ -1,4 +1,5 @@
 username,pwd,bio,friends
-man,pwd,{coucou},elo
-adri,pwd,{awale},
+man,pwd,{Je m'appelle manon},elo
+adri,pwd,{awale},man
 elo,pwd,{},
+obs,pwd,{},

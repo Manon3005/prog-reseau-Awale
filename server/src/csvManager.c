@@ -142,10 +142,13 @@ char* getBioFromCsv(csvManager* csvManager, char* username) {
         return NULL;
     }
 
+    printf("getBioFromCsv after fopen\n");
+
     static char bio[1024]; 
     char line[1024];
 
     while (fgets(line, sizeof(line), file)) {
+        printf("getBioFromCsv after in while\n");
         line[strcspn(line, "\r\n")] = 0; // Nettoyage des fins de ligne
 
         char *file_username = strtok(line, ",");
