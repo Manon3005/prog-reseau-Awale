@@ -58,5 +58,9 @@ static void print_board(Game* game, Client* client, int in_choice);
 static Client* get_client_from_username(Client* clients, int actual, char* username);
 static void print_game_end(Game* game, int status, Client* client_to_send);
 static Client* get_receiver_from_sender(Request* requests, int actual, Client* sender);
+static void remove_game(Game* games, Game* game, int* actualGame);
+static void intToStr(int value, char* buffer, size_t size);
+static void print_player_archives(Client* client);
+static void print_current_games(Game* games, int actualGame, Client* client);
 
 #endif /* guard */

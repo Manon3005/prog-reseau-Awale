@@ -9,7 +9,7 @@ INC_DIR = headers
 
 # Compiler et options
 CC = gcc
-CFLAGS = -Wall -Wextra -I$(INC_DIR)
+CFLAGS = -I$(INC_DIR)
 
 # Recherche de tous les fichiers .c dans le répertoire src
 SRCS = $(wildcard $(SRC_DIR)/*.c)

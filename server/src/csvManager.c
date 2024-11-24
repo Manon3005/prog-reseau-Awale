@@ -5,8 +5,13 @@
 
 #include "../headers/csvManager.h"
 
+void initCsvManager(csvManager* csvManager, char* csvClientFilePath,char* csvGamesFilePath) {
+    strcpy(csvManager->csvClientFilePath, csvClientFilePath);
+    strcpy(csvManager->csvGamesFilePath, csvGamesFilePath);
+}
+
 int isCLientInCsv(csvManager* csvManager, char* username) {
-    FILE *file = fopen("data/clients.csv", "r");
+    FILE *file = fopen(csvManager->csvClientFilePath, "r");
     if (file == NULL) {
         printf("Impossible d'ouvrir le fichier\n");
         return 0;
@@ -27,7 +32,7 @@ int isCLientInCsv(csvManager* csvManager, char* username) {
 }
 
 int authenticateClient(csvManager* csvManager, char* username, char* pwd) {
-    FILE *file = fopen("data/clients.csv", "r");
+    FILE *file = fopen(csvManager->csvClientFilePath, "r");
     if (file == NULL) {
         printf("Impossible d'ouvrir le fichier\n");
         return 0;
@@ -54,7 +59,7 @@ int authenticateClient(csvManager* csvManager, char* username, char* pwd) {
 }
 
 int addClientCsv(csvManager* csvManager, char* username, char* pwd) {
-    FILE *file = fopen("data/clients.csv", "a");
+    FILE *file = fopen(csvManager->csvClientFilePath, "a");
     if (file == NULL) {
         printf("Impossible d'ouvrir le fichier\n");
         return 0;
@@ -66,7 +71,7 @@ int addClientCsv(csvManager* csvManager, char* username, char* pwd) {
 }
 
 int changeBioCsv(csvManager* csvManager, char* username, char* bio) {
-    FILE *file = fopen("data/clients.csv", "r");
+    FILE *file = fopen(csvManager->csvClientFilePath, "r");
     if (file == NULL) {
         printf("Impossible d'ouvrir le fichier\n");
         return 0;
@@ -123,7 +128,7 @@ int changeBioCsv(csvManager* csvManager, char* username, char* bio) {
     fclose(temp);
 
     // Remplacer l'ancien fichier par le fichier temporaire
-    if (remove("data/clients.csv") != 0) {
+    if (remove(csvManager->csvClientFilePath) != 0) {
         printf("Erreur lors de la suppression de l'ancien fichier\n");
         return 0;
     }
@@ -136,19 +141,16 @@ int changeBioCsv(csvManager* csvManager, char* username, char* bio) {
 }
 
 char* getBioFromCsv(csvManager* csvManager, char* username) {
-    FILE *file = fopen("data/clients.csv", "r");
+    FILE *file = fopen(csvManager->csvClientFilePath, "r");
     if (file == NULL) {
         printf("Impossible d'ouvrir le fichier\n");
         return NULL;
     }
 
-    printf("getBioFromCsv after fopen\n");
-
     static char bio[1024]; 
     char line[1024];
 
     while (fgets(line, sizeof(line), file)) {
-        printf("getBioFromCsv after in while\n");
         line[strcspn(line, "\r\n")] = 0; // Nettoyage des fins de ligne
 
         char *file_username = strtok(line, ",");
@@ -173,7 +175,7 @@ char* getBioFromCsv(csvManager* csvManager, char* username) {
 }
 
 int addGameToCsv(csvManager* csvManager, const char* player1, const char* player2, const char* date, const char* winner) {
-    FILE *file = fopen("data/games.csv", "a");
+    FILE *file = fopen(csvManager->csvGamesFilePath, "a");
     if (file == NULL) {
         printf("Impossible d'ouvrir le fichier\n");
         return 0;
@@ -238,7 +240,7 @@ int getGamesByPlayer(const char* username, SavedGame** games, int* gameCount) {
 }
 
 int addFriendToCsv(csvManager* csvManager, char* username, char* friend_username) {
-    FILE *file = fopen("data/clients.csv", "r");
+    FILE *file = fopen(csvManager->csvClientFilePath, "r");
     if (file == NULL) {
         printf("Impossible d'ouvrir le fichier\n");
         return 0;
@@ -291,7 +293,7 @@ int addFriendToCsv(csvManager* csvManager, char* username, char* friend_username
     fclose(temp);
 
     // Remplace le fichier original par le temporaire
-    if (remove("data/clients.csv") != 0) {
+    if (remove(csvManager->csvClientFilePath) != 0) {
         printf("Erreur lors de la suppression de l'ancien fichier\n");
         return 0;
     }
@@ -304,7 +306,7 @@ int addFriendToCsv(csvManager* csvManager, char* username, char* friend_username
 }
 
 int removeFriendFromCsv(csvManager* csvManager, char* username, char* friend_username) {
-    FILE *file = fopen("data/clients.csv", "r");
+    FILE *file = fopen(csvManager->csvClientFilePath, "r");
     if (file == NULL) {
         printf("Impossible d'ouvrir le fichier\n");
         return 0;
@@ -357,7 +359,7 @@ int removeFriendFromCsv(csvManager* csvManager, char* username, char* friend_use
     fclose(temp);
 
     // Remplace le fichier original par le temporaire
-    if (remove("data/clients.csv") != 0) {
+    if (remove(csvManager->csvClientFilePath) != 0) {
         printf("Erreur lors de la suppression de l'ancien fichier\n");
         return 0;
     }
@@ -370,7 +372,7 @@ int removeFriendFromCsv(csvManager* csvManager, char* username, char* friend_use
 }
 
 int areFriendsInCsv(csvManager* csvManager, char* username, char* friend_username) {
-    FILE *file = fopen("data/clients.csv", "r");
+    FILE *file = fopen(csvManager->csvClientFilePath, "r");
     if (file == NULL) {
         printf("Impossible d'ouvrir le fichier\n");
         return 0;
@@ -397,7 +399,7 @@ int areFriendsInCsv(csvManager* csvManager, char* username, char* friend_usernam
 }
 
 char** getFriendsAsArrayFromCsv(csvManager* csvManager, char* username, int* friend_count) {
-    FILE *file = fopen("data/clients.csv", "r");
+    FILE *file = fopen(csvManager->csvClientFilePath, "r");
     if (file == NULL) {
         printf("Impossible d'ouvrir le fichier\n");
         *friend_count = 0;
@@ -458,7 +460,7 @@ char** getFriendsAsArrayFromCsv(csvManager* csvManager, char* username, int* fri
 }
 
 int playerExistsInCsv(csvManager* csvManager, char* username) {
-    FILE *file = fopen("data/clients.csv", "r");
+    FILE *file = fopen(csvManager->csvClientFilePath, "r");
     if (file == NULL) {
         printf("Impossible d'ouvrir le fichier\n");
         return 0; // Erreur d'ouverture, supposons que l'utilisateur n'existe pas

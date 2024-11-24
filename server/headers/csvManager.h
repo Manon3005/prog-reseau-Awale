@@ -1,5 +1,6 @@
 typedef struct csvManager {
-    FILE* csvClient;
+    char csvClientFilePath[50];
+    char csvGamesFilePath[50];
 } csvManager;
 
 typedef struct {
@@ -9,6 +10,7 @@ typedef struct {
     char winner[256];
 } SavedGame;
 
+void initCsvManager(csvManager* csvManager, char* csvClientFilePath,char* csvGamesFilePath);
 int isCLientInCsv(csvManager* csvManager, char* username);
 int authenticateClient(csvManager* csvManager, char* username, char* pwd);
 int addClientCsv(csvManager* csvManager, char* username, char* pwd);
@@ -21,3 +23,4 @@ int removeFriendFromCsv(csvManager* csvManager, char* username, char* friend_use
 int areFriendsInCsv(csvManager* csvManager, char* username, char* friend_username);
 char** getFriendsAsArrayFromCsv(csvManager* csvManager, char* username, int* friend_count);
 int playerExistsInCsv(csvManager* csvManager, char* username);
+int getGamesByPlayer(const char* username, SavedGame** games, int* gameCount);
